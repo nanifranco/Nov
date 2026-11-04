@@ -3418,8 +3418,14 @@ function accion(a, el){
       state.notas.unshift(n);
       guardar(); cerrarHoja(); render(); toast('Nota guardada'); break;
     case 'del-nota':
+      var nb = buscar(state.notas, id); if(!nb) break;
+      abrirHoja('<h2 id="ht">¿Borrar esto?</h2>' +
+        '<p class="nota-x" style="margin:4px 0 6px">' + (nb.lugar ? '<b>' + esc(nb.lugar) + ':</b> ' : '') + esc(nb.texto) + '</p>' +
+        '<div class="hoja-b"><button class="b b-sec" data-a="cerrar">Cancelar</button><button class="b b-peligro" data-a="del-nota-si" data-id="' + nb.id + '">Borrar</button></div>', 'borrar-nota');
+      break;
+    case 'del-nota-si':
       state.regalos.forEach(function(r){ if(r.notaId === id) delete r.notaId; });
-      state.notas = quitar(state.notas, id); guardar(); render(); toast('Nota borrada'); break;
+      state.notas = quitar(state.notas, id); cerrarHoja(); guardar(); render(); toast('Borrado'); break;
     case 'nota-regalo':
       var nt = buscar(state.notas, id); if(!nt) break;
       if(nt.regaloId && buscar(state.regalos, nt.regaloId)){
