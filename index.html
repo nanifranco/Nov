@@ -1232,7 +1232,8 @@ function guardarLocal(){
   }
   try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); return true; }catch(e){ return false; }
 }
-function avisos(){
+function avisos(lim, semanas){
+  lim = lim || 40;
   var out = [], ahora = Date.now();
   function a(fecha, hora, titulo, cuerpo){
     var d = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate(), hora, 0, 0);
@@ -1248,8 +1249,8 @@ function avisos(){
   var u = parse(state.chequeo.ultimo);
   if(u) a(masDias(u, +state.chequeo.cada || 30), 10, 'Check-in con María', 'Ya toca sentarse a platicar cómo van.');
   out.sort(function(x, y){ return x.at - y.at; });
-  out = out.slice(0, 22);
-  return out.concat(avisosAzar(40 - out.length, ahora)).sort(function(x, y){ return x.at - y.at; });
+  out = out.slice(0, Math.round(lim * .55));
+  return out.concat(avisosAzar(lim - out.length, ahora, semanas)).sort(function(x, y){ return x.at - y.at; });
 }
 /* avisos al azar: "+ contacto físico" a horas distintas, más seguido de lo que ella pidió */
 var AZAR_T = {palabras:'+ palabras bonitas', tiempo:'+ tiempo juntas', detalles:'+ un detalle', actos:'+ ayudarla con algo', contacto:'+ contacto físico'};
@@ -1260,11 +1261,11 @@ function pesosAmor(){
   if(ult && ult.mas && ult.mas.length) ult.mas.forEach(function(e){ if(w[e] != null) w[e] += 4; });
   return w;
 }
-function avisosAzar(max, ahora){
+function avisosAzar(max, ahora, semanas){
   var n = +state.azar || 0, out = [];
   if(!n || max <= 0) return out;
   var w = pesosAmor(), total = EJES.reduce(function(s, e){ return s + w[e]; }, 0), lu = lunes(hoy());
-  for(var sem = 0; sem < 3; sem++){
+  for(var sem = 0; sem < (semanas || 3); sem++){
     var ini = masDias(lu, sem * 7), r = semilla(iso(ini) + ':' + n), dias7 = [0,1,2,3,4,5,6];
     for(var i = 0; i < n; i++){
       var di = dias7.splice(Math.floor(r() * dias7.length), 1)[0], f = masDias(ini, di);
@@ -1277,7 +1278,44 @@ function avisosAzar(max, ahora){
   }
   return out.sort(function(x, y){ return x.at - y.at; }).slice(0, max);
 }
+/* ---------- avisos por servidor (iPhone desde la pantalla de inicio) ---------- */
+var PUSH_KEY = 'nov:push';
+function pushCfg(){ try{ return JSON.parse(localStorage.getItem(PUSH_KEY) || 'null'); }catch(e){ return null; } }
+function pushGuardar(c){ try{ c ? localStorage.setItem(PUSH_KEY, JSON.stringify(c)) : localStorage.removeItem(PUSH_KEY); }catch(e){} }
+function pushPuede(){ return !RN && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window && location.protocol === 'https:'; }
+function enInicio(){ return (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; }
+function b64aBytes(s){ var t = atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)); var u = new Uint8Array(t.length); for(var i=0;i<t.length;i++) u[i] = t.charCodeAt(i); return u; }
+function servidorUrl(u){ u = String(u || '').trim().replace(/\/+$/, ''); if(u && !/^https?:\/\//i.test(u)) u = 'https://' + u; return u; }
+var pushT = null;
+function pushSync(){
+  var c = pushCfg(); if(!c || !c.url || !c.sub) return Promise.resolve(null);
+  return fetch(c.url + '/avisos', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({sub:c.sub, avisos:avisos(300, 8)})})
+    .then(function(r){ return r.json(); }).catch(function(){ return null; });
+}
+function pushActivar(url){
+  url = servidorUrl(url);
+  if(!url) return Promise.reject(new Error('Pega el link del servidor.'));
+  return Notification.requestPermission().then(function(p){
+    if(p !== 'granted') throw new Error('No diste permiso. Actívalo en Ajustes del iPhone, Notificaciones, Nov.');
+    return Promise.all([navigator.serviceWorker.register('sw.js').then(function(){ return navigator.serviceWorker.ready; }),
+      fetch(url + '/llave').then(function(r){ if(!r.ok) throw 0; return r.json(); }).catch(function(){ throw new Error('No encontré el servidor en ese link.'); })]);
+  }).then(function(r){
+    var reg = r[0], llave = r[1].llave;
+    return reg.pushManager.getSubscription().then(function(viejo){ return viejo ? viejo.unsubscribe() : null; }).then(function(){
+      return reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:b64aBytes(llave)});
+    });
+  }).then(function(sub){
+    pushGuardar({url:url, sub:sub.toJSON()});
+    return pushSync();
+  });
+}
+function pushApagar(){
+  var c = pushCfg(); pushGuardar(null);
+  if(c && c.url && c.sub) fetch(c.url + '/quitar', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({sub:c.sub})}).catch(function(){});
+  if(pushPuede()) navigator.serviceWorker.getRegistration().then(function(reg){ return reg && reg.pushManager.getSubscription(); }).then(function(s){ if(s) s.unsubscribe(); }).catch(function(){});
+}
 function guardar(){
+  if(pushCfg()){ clearTimeout(pushT); pushT = setTimeout(pushSync, 2500); }
   state.actualizado = Date.now();
   var limite = iso(masDias(hoy(), -120));
   Object.keys(state.hechos).forEach(function(k){ if(k < limite) delete state.hechos[k]; });
@@ -2006,16 +2044,8 @@ function vistaMaria(){
   var ini2 = parse(state.inicio);
   if(ini2) info.push('Juntas desde el ' + ini2.getDate() + ' de ' + MESES_L[ini2.getMonth()] + ' de ' + ini2.getFullYear());
   var fm = state.fotoMaria;
-  var cab = '<div class="hero"><button class="avatar-b' + (fm ? ' con-foto' : '') + '" data-a="avatar" aria-label="' + (fm ? 'Cambiar su foto' : 'Ponerle foto') + '">' +
-      (fm ? '<img alt="" src="' + esc(fotoSrc(fm)) + '">' : '<span class="avatar-i">M</span>') +
-      '<span class="cam" aria-hidden="true">' + I.cam + '</span></button>' +
-    '<div class="hero-t"><h1 class="titulo">María</h1>' + info.map(function(x){ return '<p class="meta">' + x + '</p>'; }).join('') + '</div></div>' +
-    '<div class="fotos" role="list" aria-label="Nuestras fotos">' +
-      '<button class="foto-t foto-add" role="listitem" data-a="foto-add" aria-label="Agregar fotos">' + I.mas + '<span>Fotos</span></button>' +
-      state.fotos.map(function(f){
-        return '<button class="foto-t" role="listitem" data-a="ver-foto" data-id="' + f.id + '" aria-label="' + esc(f.nota || 'Ver foto') + '"><img alt="" loading="lazy" src="' + esc(fotoSrc(f)) + '"></button>';
-      }).join('') + '</div>' +
-    '';
+  var cab = '<div class="hero"><div class="avatar-b"><span class="avatar-i">M</span></div>' +
+    '<div class="hero-t"><h1 class="titulo">María</h1>' + info.map(function(x){ return '<p class="meta">' + x + '</p>'; }).join('') + '</div></div>';
   var h = vistaFichas();
   var rp = state.regalos.filter(function(r){ return !r.dado; }), rd = state.regalos.filter(function(r){ return r.dado; });
   h += sec('Ideas de regalo', rp.length, '<button class="enlace" data-a="regalo">Agregar</button>');
@@ -2947,6 +2977,19 @@ function hojaAvatar(){
     '<div class="avatar-g"><img alt="" src="' + esc(fotoSrc(state.fotoMaria)) + '"></div>' +
     '<div class="hoja-b"><button class="b b-peligro" data-a="avatar-quitar">Quitar</button><button class="b b-pri" data-a="avatar-cambiar">Cambiar foto</button></div>', 'avatar');
 }
+function seccionAvisos(){
+  if(RN) return '';
+  var c = pushCfg(), h = '<div class="linea"><h3 class="sub" style="margin:0 0 8px">Avisos</h3>';
+  if(!pushPuede() || !enInicio()) return h + '<p class="estado">Para que te lleguen, abre Nov desde el ícono de tu pantalla de inicio (en Safari: Compartir, Agregar a inicio).</p></div>';
+  if(c && Notification.permission === 'granted'){
+    return h + '<p class="estado" style="margin-bottom:10px">Activados</p>' +
+      '<div class="hoja-b" style="margin-top:0"><button class="b b-sec" data-a="push-prueba">Mandar uno de prueba</button><button class="b b-sec" data-a="push-apagar">Apagar</button></div></div>';
+  }
+  return h + '<label for="a-srv">Link del servidor</label>' +
+    '<input class="campo" id="a-srv" type="url" inputmode="url" placeholder="https://nov-avisos….workers.dev" value="' + esc(c && c.url || '') + '">' +
+    '<p class="error" id="a-pe" role="alert"></p>' +
+    '<button class="b b-pri b-ancho" style="margin-top:10px" data-a="push-activar">Activar avisos</button></div>';
+}
 function hojaAjustes(){
   var estado = ui.modo === 'cuenta' ? 'Mis notas se guardan en mi cuenta. Solo yo puedo verlas.'
     : ui.modo === 'dispositivo' ? 'Mis notas se guardan solo en este dispositivo.'
@@ -2958,6 +3001,7 @@ function hojaAjustes(){
     '<button class="b b-pri" data-a="guardar-inicio">Guardar</button></div>' +
     '<p class="error" id="a-e" role="alert"></p>' +
     '<div class="linea"><p class="estado">' + estado + '</p></div>' +
+    seccionAvisos() +
     '<div class="linea"><p class="estado" style="margin-bottom:10px">para pasar mis notas a otro teléfono o a la app</p>' +
       '<div class="hoja-b" style="margin-top:0"><button class="b b-sec" data-a="datos-copiar">Copiar mis datos</button>' +
       '<button class="b b-sec" data-a="datos-pegar">Pegar mis datos</button></div></div>' +
@@ -2997,6 +3041,18 @@ function accion(a, el){
     case 'sub': ui.sub = v; ui.anim = true; render(); break;
     case 'idea': ui.idea = v; render(); break;
     case 'checkin': hojaCheckin(); break;
+    case 'push-activar':
+      var srv = val('#a-srv'); el.disabled = true; el.textContent = 'Activando…';
+      pushActivar(srv).then(function(r){
+        hojaAjustes(); toast(r && r.ok ? 'Avisos activados' : 'Activados, pero no pude mandar la lista. Lo intento al guardar.');
+      }, function(e){ el.disabled = false; el.textContent = 'Activar avisos'; var pe = $('#a-pe'); if(pe) pe.textContent = (e && e.message) || 'No se pudo activar.'; });
+      break;
+    case 'push-prueba':
+      var pc = pushCfg(); if(!pc) break;
+      fetch(pc.url + '/prueba', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({sub:pc.sub})})
+        .then(function(r){ return r.json(); }).then(function(r){ toast(r.ok ? 'Mandado, debe llegar en unos segundos' : 'El servidor no pudo mandarlo'); }, function(){ toast('No encontré el servidor'); });
+      break;
+    case 'push-apagar': pushApagar(); hojaAjustes(); toast('Avisos apagados'); break;
     case 'ck-op': el.setAttribute('aria-pressed', el.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'); break;
     case 'guardar-checkin':
       var ckT = val('#ck-t'), ckQ = val('#ck-q'), ckN = val('#ck-n');
@@ -3508,6 +3564,7 @@ if(local){ state = normalize(local); habiaLocal = true; ui.modo = 'dispositivo';
 else { ui.modo = guardarLocal() ? 'dispositivo' : 'memoria'; try{ localStorage.removeItem(LS_KEY); }catch(e){} }
 render();
 if(RN && habiaLocal) guardarLocal();
+if(pushPuede()){ navigator.serviceWorker.register('sw.js').catch(function(){}); if(pushCfg()) setTimeout(pushSync, 1500); }
 var espera = new Promise(function(res){ setTimeout(res, 2500); });
 var conexion = conectar();
 if(window.claude && typeof window.claude.use === 'function'){

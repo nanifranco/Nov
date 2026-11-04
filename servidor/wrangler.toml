@@ -1,0 +1,13 @@
+name = "nov-avisos"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+[triggers]
+crons = ["*/5 * * * *"]
+
+[[kv_namespaces]]
+binding = "AVISOS"
+id = "PENDIENTE"
+
+[vars]
+VAPID_PUBLIC = "PENDIENTE"

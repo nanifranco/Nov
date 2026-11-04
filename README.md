@@ -11,10 +11,30 @@ No es para abrirla diario. Es para recordar cosas de María y que los avisos lle
 - **Check-ins:** el check-in mensual con historial (si trae algo, cómo quiere sentirse más querida, notas) y los avisos al azar tipo «+ contacto físico», más seguido de lo que ella pidió.
 - **Citas:** el generador de citas y mis ideas.
 
+## Avisos en el iPhone (desde la pantalla de inicio)
+
+Safari no puede programar avisos solo, así que un servidor gratis en Cloudflare los manda a su hora (`servidor/`).
+
+Una sola vez, en tu compu:
+
+```bash
+cd servidor
+npm install
+npm run preparar
+```
+
+Te pide entrar a Cloudflare (la cuenta gratis basta), crea todo y lo sube. Al final copia el link que termina en `.workers.dev`.
+
+En el iPhone abre Nov desde el ícono de inicio: Ajustes, Avisos, pega el link y toca **Activar avisos**. Con **Mandar uno de prueba** revisas que lleguen.
+
+Los avisos al azar se programan 8 semanas hacia adelante y se renuevan cada vez que abres Nov.
+
 ## Estructura
 
 ```
 index.html      La app completa en una sola página. Funciona en cualquier navegador.
+sw.js           Recibe los avisos y los muestra como notificación.
+servidor/       El servidor de avisos (Cloudflare Worker).
 app/            La versión para iPhone y Android (Expo). Muestra index.html y le agrega
                 notificaciones, Face ID o huella y guardado en el teléfono.
 ```

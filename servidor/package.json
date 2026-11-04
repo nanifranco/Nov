@@ -1,0 +1,12 @@
+{
+  "name": "nov-avisos",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "preparar": "node preparar.mjs",
+    "subir": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

@@ -1,0 +1,4 @@
+node_modules
+.wrangler
+.llaves.json
+.dev.vars
