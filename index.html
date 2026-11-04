@@ -931,6 +931,11 @@ main:has(.fab){padding-bottom:84px}
 .rec-b[aria-pressed="true"]{background:#241E3D;color:#A08BFF;opacity:1}
 .ahora-hb{display:flex;align-items:center;gap:18px;flex:1;min-width:0;text-align:left;color:inherit}
 .ahora-hero .rec-b{align-self:flex-start}
+.juntas{display:flex;align-items:center;gap:14px;margin-top:14px;padding:4px 2px}
+.juntas-i{width:44px;height:44px;flex:none;border-radius:14px;display:grid;place-items:center;background:#241E3D;color:#A08BFF}
+.juntas-i svg{width:22px;height:22px}
+.juntas-l{display:block;font-size:.75rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.juntas-t{display:block;font-size:1.05rem;font-weight:700}
 </style>
 </head>
 <body>
@@ -2126,11 +2131,24 @@ function hojaRegalo(id){
     botones('guardar-regalo', 'Guardar'), 'regalo');
 }
 
+function tiempoJuntas(){
+  var ini = parse(state.inicio); if(!ini) return null;
+  var t = hoy(), a = t.getFullYear() - ini.getFullYear(), m = t.getMonth() - ini.getMonth(), d = t.getDate() - ini.getDate();
+  if(d < 0){ m--; d += new Date(t.getFullYear(), t.getMonth(), 0).getDate(); }
+  if(m < 0){ a--; m += 12; }
+  if(a < 0) return null;
+  var p = [];
+  if(a) p.push(plural(a, 'año', 'años'));
+  if(m) p.push(plural(m, 'mes', 'meses'));
+  if(d || !p.length) p.push(plural(d, 'día', 'días'));
+  return unir(p);
+}
 function recOn(x){ return !!x.rec; }
 function vistaAhora(){
   var t = hoy();
   var cab = '<p class="fecha-hoy">' + esc(fechaCorta(t)) + '</p><h1 class="titulo">Ahora</h1>';
-  var h = '';
+  var tj = tiempoJuntas(), h = '';
+  if(tj) h += '<div class="juntas"><span class="juntas-i">' + I.cora + '</span><span><span class="juntas-l">Juntas</span><span class="juntas-t">' + esc(tj) + '</span></span></div>';
   if(chequeoEstado().toca) h += '<button class="aviso-ck" data-a="checkin"><span>Ya toca check-in con María</span><b>Anotar</b></button>';
   var items = state.semana.map(function(x){ var d = parse(x.fecha); return {x:x, d:d, n: d ? dias(t, d) : null}; });
   var con = items.filter(function(i){ return i.d; }).sort(function(a, b){ return a.n - b.n; });
