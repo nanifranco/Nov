@@ -894,6 +894,35 @@ body{background:var(--bg)}
 .regalo-a{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .regalo-a a{text-decoration:none;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .regalo-pick{width:100%;height:150px;border:1.5px dashed #D9D4E8;border-radius:18px;background:#F8F7FB;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#6B6580;font:inherit;font-weight:600;overflow:hidden;cursor:pointer;margin-bottom:6px}
+.ahora-hero{display:flex;align-items:center;gap:18px;width:100%;text-align:left;margin-top:18px;padding:22px 20px;border-radius:24px;background:#F1EEFF;color:#1B1530}
+.ahora-dia{flex:none;width:68px;height:72px;border-radius:18px;background:#6B5CE7;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+.ahora-dia b{font-size:1.9rem;font-weight:800}
+.ahora-dia i{font-style:normal;font-size:.8rem;font-weight:700;text-transform:uppercase;margin-top:4px;opacity:.85}
+.ahora-hx{display:flex;flex-direction:column;gap:4px;min-width:0}
+.ahora-l{font-size:.75rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#6B5CE7}
+.ahora-ht{font-size:1.2rem;font-weight:700;line-height:1.25}
+.ahora-s{font-size:.8rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:32px 4px 12px}
+.ahora-l2{display:flex;flex-direction:column;gap:10px}
+.ahora-f{display:flex;align-items:center;gap:14px;padding:16px;border-radius:18px;background:var(--surface);border:1px solid var(--line)}
+.ahora-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;text-align:left}
+.ahora-x{font-weight:600;line-height:1.3}
+.ahora-m{font-size:.85rem;color:var(--muted)}
+.ahora-hero .ahora-m{color:#5E5778}
+.cuando.pronto{background:#F1EEFF;color:#5B3FE0}
+.aviso-ck{display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:18px;padding:14px 16px;border-radius:16px;background:var(--fill);font-weight:600;font-size:.95rem}
+.aviso-ck b{color:#5B3FE0;font-weight:700}
+.ahora-vacio{display:flex;flex-direction:column;align-items:center;text-align:center;gap:16px;padding:80px 20px 40px;color:var(--muted)}
+.ahora-vacio .blob{width:72px;height:72px}
+.ahora-vacio p{font-size:1.05rem;font-weight:600}
+.fab{position:fixed;right:max(20px,calc(50% - 220px));bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:6;width:58px;height:58px;border-radius:20px;background:#6B5CE7;color:#fff;display:grid;place-items:center;box-shadow:0 12px 24px -10px rgba(91,63,224,.6)}
+.fab svg{width:26px;height:26px}
+main:has(.fab){padding-bottom:84px}
+.vacio .blob{width:56px;height:56px;margin:0 auto 10px}
+@media (prefers-color-scheme: dark){
+  .ahora-hero{background:#221D3A;color:#F5F5F7}
+  .ahora-hero .ahora-m{color:#B9B2D6}
+  .cuando.pronto{background:#241E3D;color:#A08BFF}
+}
 </style>
 </head>
 <body>
@@ -1451,14 +1480,13 @@ var BLOB_F = {
 var BLOB_C = ['#8E63E8','#FF8A3D','#22A699','#5B7FE0','#F5A524','#F26B4F'];
 var BLOB_K = Object.keys(BLOB_F);
 var blobN = 0;
-function blob(forma, color, ojos){
+var BLOB_I = {circulo:'cora', flor:'estrella', nube:'chat', penta:'tag', rombo:'regalo', gota:'sol'};
+function blob(forma, color){
   var i = blobN++;
-  forma = forma || BLOB_K[i % BLOB_K.length]; color = color || BLOB_C[(i * 2 + 1) % BLOB_C.length];
-  var cara = ojos === 'feliz'
-    ? '<path d="M31 54q6-7 12 0M57 54q6-7 12 0" fill="none" stroke="#1B1530" stroke-width="4" stroke-linecap="round"/>'
-    : '<circle cx="37" cy="54" r="8" fill="#1B1530"/><circle cx="63" cy="54" r="8" fill="#1B1530"/><circle cx="39.5" cy="51.5" r="2.4" fill="#fff"/><circle cx="65.5" cy="51.5" r="2.4" fill="#fff"/>';
-  return '<svg class="blob" viewBox="0 0 100 100" aria-hidden="true"><g fill="' + color + '" stroke="' + color + '">' + BLOB_F[forma] + '</g>' + cara +
-    '<path d="M46 65q4 4 8 0" fill="none" stroke="#1B1530" stroke-width="3" stroke-linecap="round"/></svg>';
+  forma = forma || BLOB_K[i % BLOB_K.length]; color = color || '#6B5CE7';
+  var k = BLOB_I[forma] || 'cora', inner = String(I[k] || '').replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
+  return '<svg class="blob" viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" rx="15" fill="' + color + '" fill-opacity=".13"/>' +
+    '<g transform="translate(12 12)" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + inner + '</g></svg>';
 }
 
 /* ---------- utilidades ---------- */
@@ -2089,18 +2117,38 @@ function hojaRegalo(id){
 }
 
 function vistaAhora(){
-  var t = hoy(), cab = '<h1 class="titulo">Ahora</h1>';
-  var h = '<button class="captura" style="margin-top:0" data-a="semana">' + I.mas + '<span>Anotar algo de María</span></button>';
-  if(chequeoEstado().toca) h += '<button class="tarjeta guia g-lila" data-a="checkin"><span class="ico" aria-hidden="true">' + blob('circulo', '#8E63E8') + '</span><span><b>Ya toca check-in</b></span>' + I.flecha + '</button>';
-  if(state.semana.length){
-    var ord = state.semana.slice().sort(function(a, b){ return (a.fecha || '9999') < (b.fecha || '9999') ? -1 : 1; });
-    h += sec('Lo que trae', ord.length) + '<div class="lista">' + ord.map(function(s){
-      var d = parse(s.fecha);
-      return '<div class="fila"><button class="marca-dado" data-a="seg-hecho" data-id="' + s.id + '" aria-label="Listo: ' + esc(s.texto) + '">' + I.ok + '</button>' +
-        '<button class="fila-c regalo-b" data-a="editar-semana" data-id="' + s.id + '"><p class="nota-x">' + esc(s.texto) + '</p>' + (d ? '<p class="meta">' + esc(fechaCorta(d)) + '</p>' : '<p class="meta">Sin fecha</p>') + '</button>' +
-        (d ? '<span class="cuando">' + cuandoTxt(dias(t, d)) + '</span>' : '') + '</div>';
-    }).join('') + '</div>';
-  } else h += '<div class="vacio">' + blob() + '<p>Nada pendiente</p></div>';
+  var t = hoy();
+  var cab = '<p class="fecha-hoy">' + esc(fechaCorta(t)) + '</p><h1 class="titulo">Ahora</h1>';
+  var h = '';
+  if(chequeoEstado().toca) h += '<button class="aviso-ck" data-a="checkin"><span>Ya toca check-in con María</span><b>Anotar</b></button>';
+  var items = state.semana.map(function(x){ var d = parse(x.fecha); return {x:x, d:d, n: d ? dias(t, d) : null}; });
+  var con = items.filter(function(i){ return i.d; }).sort(function(a, b){ return a.n - b.n; });
+  var sin = items.filter(function(i){ return !i.d; });
+  if(!items.length){
+    return {cab:cab, cuerpo: h + '<div class="ahora-vacio">' + blob('circulo') + '<p>Nada pendiente de María</p>' +
+      '<button class="b b-pri" data-a="semana">Anotar algo</button></div>'};
+  }
+  function fila(i){
+    var x = i.x, d = i.d;
+    return '<div class="ahora-f">' +
+      '<button class="marca-dado" data-a="seg-hecho" data-id="' + x.id + '" aria-label="Listo: ' + esc(x.texto) + '">' + I.ok + '</button>' +
+      '<button class="ahora-t" data-a="editar-semana" data-id="' + x.id + '"><span class="ahora-x">' + esc(x.texto) + '</span>' +
+        (d ? '<span class="ahora-m">' + esc(fechaCorta(d)) + '</span>' : '') + '</button>' +
+      (d ? '<span class="cuando' + (i.n <= 2 ? ' pronto' : '') + '">' + cuandoTxt(i.n) + '</span>' : '') + '</div>';
+  }
+  var prox = con.filter(function(i){ return i.n >= 0; })[0];
+  if(prox){
+    h += '<button class="ahora-hero" data-a="editar-semana" data-id="' + prox.x.id + '">' +
+      '<span class="ahora-dia"><b>' + prox.d.getDate() + '</b><i>' + MESES[prox.d.getMonth()] + '</i></span>' +
+      '<span class="ahora-hx"><span class="ahora-l">Lo próximo</span><span class="ahora-ht">' + esc(prox.x.texto) + '</span>' +
+      '<span class="ahora-m">' + cuandoTxt(prox.n) + '</span></span></button>';
+  }
+  var resto = con.filter(function(i){ return i !== prox; });
+  var semana = resto.filter(function(i){ return i.n <= 7; }), luego = resto.filter(function(i){ return i.n > 7; });
+  if(semana.length) h += '<h2 class="ahora-s">Esta semana</h2><div class="ahora-l2">' + semana.map(fila).join('') + '</div>';
+  if(luego.length) h += '<h2 class="ahora-s">Más adelante</h2><div class="ahora-l2">' + luego.map(fila).join('') + '</div>';
+  if(sin.length) h += '<h2 class="ahora-s">Sin fecha</h2><div class="ahora-l2">' + sin.map(fila).join('') + '</div>';
+  h += '<button class="fab" data-a="semana" aria-label="Anotar algo de María">' + I.mas + '</button>';
   return {cab:cab, cuerpo:h};
 }
 
@@ -2680,7 +2728,7 @@ function generarCita(){
   return {plan:a[0], comida:c[0], toque:elegir(toques), lugar:lugar, costo:costo, mia:!!a[4], vibe:a[3]};
 }
 function vistaGenerador(){
-  var h = genCaja({modo:ui.genModo, modoA:'gen-modo', ir:'gen', hay:!!ui.gen, cara:blob('nube', '#8E63E8'),
+  var h = genCaja({modo:ui.genModo, modoA:'gen-modo', ir:'gen', hay:!!ui.gen, cara:blob('flor', '#6B5CE7'),
     filtros:GEN_F.map(function(f){ return '<span class="rot">' + f.n + '</span>' + chipsDe('gen-f" data-g="' + f.g, ui.gf[f.g], f.o); }).join('')});
   if(ui.gen){
     var g = ui.gen;
