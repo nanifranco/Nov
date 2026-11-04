@@ -2868,7 +2868,6 @@ function hojaSemana(id){
     '<button class="chip" id="s-fb" data-a="sem-fecha" aria-pressed="' + conFecha + '" style="margin-top:12px">' + (conFecha ? 'Con fecha' : '+ Ponerle fecha') + '</button>' +
     '<div id="s-fw"' + (conFecha ? '' : ' hidden') + '><input class="campo" id="s-d" type="date" value="' + esc(x && x.fecha ? x.fecha : '') + '" aria-label="Fecha" style="margin-top:8px">' +
     '</div>' +
-    '<label class="opcion" style="margin-top:14px"><input type="checkbox" id="s-r"' + ((x ? recOn(x) : false) ? ' checked' : '') + '><span>Recordatorio</span></label>' +
     '<p class="error" id="s-e" role="alert"></p>' +
     (x ? '<button class="enlace quitar" data-a="seg-hecho" data-id="' + x.id + '">Eliminar</button>' : '') +
     botones('guardar-semana', 'Guardar'), 'semana');
@@ -3481,8 +3480,7 @@ function accion(a, el){
       if(!st){ falta('#s-e', 'Escribe qué es.', '#s-t'); break; }
       if(usaF && !parse(sd)){ falta('#s-e', 'Elige la fecha o quítala.', '#s-d'); break; }
       var sx = ui.semId ? buscar(state.semana, ui.semId) : null;
-      var sr = $('#s-r') ? $('#s-r').checked : !!sd;
-      if(sx){ sx.texto = st; sx.fecha = sd || ''; sx.rec = sr; } else state.semana.push({id:uid(), texto:st, fecha:sd || '', rec:sr});
+      if(sx){ sx.texto = st; sx.fecha = sd || ''; } else state.semana.push({id:uid(), texto:st, fecha:sd || '', rec:!!sd});
       ui.semId = '';
       guardar(); cerrarHoja(); render(); toast('Guardado'); break;
     case 'seg-hecho':
