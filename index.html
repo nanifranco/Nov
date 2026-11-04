@@ -2084,7 +2084,7 @@ function vistaMaria(){
   var ini2 = parse(state.inicio);
   if(ini2) info.push('Juntas desde el ' + ini2.getDate() + ' de ' + MESES_L[ini2.getMonth()] + ' de ' + ini2.getFullYear());
   var fm = state.fotoMaria;
-  var cab = '<div class="hero"><div class="avatar-b"><span class="avatar-i">M</span></div>' +
+  var cab = '<div class="hero"><div class="avatar-b con-foto"><img alt="" src="maria.jpg?v=1"></div>' +
     '<div class="hero-t"><h1 class="titulo">María</h1>' + info.map(function(x){ return '<p class="meta">' + x + '</p>'; }).join('') + '</div></div>';
   var h = vistaFichas();
   var rp = state.regalos.filter(function(r){ return !r.dado; }), rd = state.regalos.filter(function(r){ return r.dado; });
