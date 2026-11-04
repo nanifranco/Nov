@@ -2341,7 +2341,6 @@ function vistaFichas(){
       var esRegalo = !!n.regaloId && state.regalos.some(function(r){ return r.id === n.regaloId; });
       return '<div class="fila"><div class="fila-c">' + (n.lugar ? '<p class="fecha-t">' + esc(n.lugar) + '</p>' : '') + '<p class="nota-x">' + esc(n.texto) + '</p></div>' +
         '<div class="acc">' +
-          '<button class="mini" data-a="nota-regalo" data-id="' + n.id + '" aria-pressed="' + esRegalo + '" aria-label="' + (esRegalo ? 'Quitar de ideas de regalo' : 'Guardar como idea de regalo') + '">' + I.regalo + '</button>' +
           '<button class="mini" data-a="del-nota" data-id="' + n.id + '" aria-label="Borrar nota">' + I.x + '</button>' +
         '</div></div>';
     }).join('') + '</div>';
@@ -2836,7 +2835,6 @@ function hojaNota(catPre){
     }).join('') + '</div>' +
     '<div id="n-lugar"' + (cat === 'ordenes' ? '' : ' hidden') + '><label for="n-l">¿De dónde?</label>' +
       '<input class="campo" id="n-l" maxlength="80" placeholder="Su restaurante favorito"></div>' +
-    '<label class="opcion"><input type="checkbox" id="n-r"><span>También es una idea de regalo</span></label>' +
     '<p class="error" id="n-e" role="alert"></p>' + botones('guardar-nota', 'Guardar nota'), 'nota');
 }
 function hojaFecha(p){
@@ -3416,10 +3414,6 @@ function accion(a, el){
         var lg = val('#n-l');
         if(!lg){ falta('#n-e', 'Escribe de dónde es la orden.', '#n-l'); break; }
         n.lugar = lg;
-      }
-      if($('#n-r').checked){
-        var rgl = {id:uid(), texto:tx, notaId:n.id, dado:false};
-        n.regaloId = rgl.id; state.regalos.push(rgl);
       }
       state.notas.unshift(n);
       guardar(); cerrarHoja(); render(); toast('Nota guardada'); break;
