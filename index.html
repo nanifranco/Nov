@@ -2869,9 +2869,8 @@ function hojaSemana(id){
     '<div id="s-fw"' + (conFecha ? '' : ' hidden') + '><input class="campo" id="s-d" type="date" value="' + esc(x && x.fecha ? x.fecha : '') + '" aria-label="Fecha" style="margin-top:8px">' +
     '</div>' +
     '<label class="opcion" style="margin-top:14px"><input type="checkbox" id="s-r"' + ((x ? recOn(x) : false) ? ' checked' : '') + '><span>Recordatorio</span></label>' +
-    '<p class="meta" style="margin:4px 0 0 34px">Con fecha: un día antes y ese día. Sin fecha: diario a las 10.</p>' +
     '<p class="error" id="s-e" role="alert"></p>' +
-    (x ? '<button class="enlace quitar" data-a="seg-hecho" data-id="' + x.id + '">Ya pasó, quitarlo</button>' : '') +
+    (x ? '<button class="enlace quitar" data-a="seg-hecho" data-id="' + x.id + '">Eliminar</button>' : '') +
     botones('guardar-semana', 'Guardar'), 'semana');
 }
 function hojaRitual(){
