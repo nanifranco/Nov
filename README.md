@@ -6,8 +6,8 @@ Una app privada para ser mejor pareja con María: lo que le gusta, lo que te cue
 
 No es para abrirla diario. Es para recordar cosas de María y que los avisos lleguen solos.
 
-- **Ahora:** lo que trae María (una entrega el domingo, algo que no va en el calendario), con aviso un día antes y ese día, y las fechas importantes.
-- **María:** lo que sé de ella: tallas, sus órdenes, su gente (cómo se llaman sus amigas), lo que le gusta, y las ideas de regalo.
+- **Ahora:** lo que trae María (una entrega el domingo, algo que no va en el calendario), con aviso un día antes y ese día.
+- **María:** lo que sé de ella: tallas, sus órdenes, su gente (cómo se llaman sus amigas), lo que le gusta, y las ideas de regalo con foto, descripción, link y precio.
 - **Check-ins:** el check-in mensual con historial (si trae algo, cómo quiere sentirse más querida, notas) y los avisos al azar tipo «+ contacto físico», más seguido de lo que ella pidió.
 - **Citas:** el generador de citas y mis ideas.
 

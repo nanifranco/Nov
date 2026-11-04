@@ -883,6 +883,17 @@ body{background:var(--bg)}
 .preg-r-q{margin:0 0 2px}
 .fila-f .preg-q{padding:0}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+.regalos{display:grid;gap:10px}
+.regalo-c{display:flex;gap:12px;background:#fff;border:1px solid var(--linea,#ECEAF3);border-radius:20px;padding:10px;align-items:flex-start}
+.regalo-c.dado{opacity:.55}
+.regalo-f{flex:0 0 84px;height:84px;border:0;padding:0;border-radius:14px;overflow:hidden;background:#F3F1F8;cursor:pointer}
+.regalo-f img,.regalo-pick img{width:100%;height:100%;object-fit:cover;display:block}
+.regalo-t{flex:1;min-width:0;padding:4px 2px}
+.regalo-b{background:none;border:0;padding:0;text-align:left;width:100%;cursor:pointer;font:inherit;color:inherit}
+.regalo-d{white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.regalo-a{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.regalo-a a{text-decoration:none;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.regalo-pick{width:100%;height:150px;border:1.5px dashed #D9D4E8;border-radius:18px;background:#F8F7FB;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#6B6580;font:inherit;font-weight:600;overflow:hidden;cursor:pointer;margin-bottom:6px}
 </style>
 </head>
 <body>
@@ -1351,7 +1362,7 @@ function errorFoto(e){
   toast(c === 'img' ? 'No pude abrir esa imagen' : c === 'too_large' ? 'La foto es demasiado grande' :
     c === 'quota_or_state' ? 'Ya no hay espacio para más fotos' : c === 'rate_limited' ? 'Espera tantito y vuelve a intentar' : 'No se pudo subir la foto');
 }
-function enUso(a){ return !!a && ((state.fotoMaria && state.fotoMaria.a === a) || state.fotos.some(function(f){ return f.a === a; })); }
+function enUso(a){ return !!a && ((state.fotoMaria && state.fotoMaria.a === a) || state.fotos.some(function(f){ return f.a === a; }) || state.regalos.some(function(r){ return r.foto && r.foto.a === a; })); }
 function soltarAsset(a){ if(a && assetsNS && !enUso(a)) assetsNS.delete(a).catch(function(){}); }
 function pedirFotos(para){
   var inp = $('#foto-in'); if(!inp) return;
@@ -2006,13 +2017,43 @@ function vistaMaria(){
       }).join('') + '</div>' +
     '';
   var h = vistaFichas();
-  var rp = state.regalos.filter(function(r){ return !r.dado; });
-  if(rp.length) h += sec('Ideas de regalo', rp.length) + '<div class="lista">' + rp.map(function(r){
-    return '<div class="fila"><button class="marca-dado" data-a="dado" data-id="' + r.id + '" aria-label="Ya se lo di">' + I.ok + '</button>' +
-      '<div class="fila-c"><p class="nota-x">' + esc(r.texto) + '</p></div>' +
-      '<button class="mini" data-a="del-regalo" data-id="' + r.id + '" aria-label="Borrar idea">' + I.x + '</button></div>';
-  }).join('') + '</div>';
+  var rp = state.regalos.filter(function(r){ return !r.dado; }), rd = state.regalos.filter(function(r){ return r.dado; });
+  h += sec('Ideas de regalo', rp.length, '<button class="enlace" data-a="regalo">Agregar</button>');
+  if(rp.length) h += '<div class="regalos">' + rp.map(tarjetaRegalo).join('') + '</div>';
+  else h += '<button class="captura" style="margin-top:0" data-a="regalo">' + I.mas + '<span>Agregar idea de regalo</span></button>';
+  if(rd.length) h += sec('Ya se los di', rd.length) + '<div class="regalos">' + rd.map(tarjetaRegalo).join('') + '</div>';
   return {cab:cab, cuerpo:h};
+}
+
+function linkOk(u){ u = String(u || '').trim(); if(!u) return ''; if(!/^https?:\/\//i.test(u)) u = 'https://' + u; return /^https?:\/\/[^\s]+\.[^\s]+/i.test(u) ? u : ''; }
+function dominio(u){ var m = String(u).match(/^https?:\/\/(?:www\.)?([^\/?#]+)/i); return m ? m[1] : u; }
+function tarjetaRegalo(r){
+  var f = r.foto ? fotoSrc(r.foto) : '', l = linkOk(r.link);
+  return '<div class="regalo-c' + (r.dado ? ' dado' : '') + '">' +
+    (f ? '<button class="regalo-f" data-a="editar-regalo" data-id="' + r.id + '" aria-label="Editar ' + esc(r.texto) + '"><img alt="" loading="lazy" src="' + esc(f) + '"></button>' : '') +
+    '<div class="regalo-t"><button class="fila-c regalo-b" data-a="editar-regalo" data-id="' + r.id + '"><p class="fecha-t">' + esc(r.texto) + '</p>' +
+      (r.precio ? '<p class="meta">' + esc(r.precio) + '</p>' : '') +
+      (r.desc ? '<p class="meta regalo-d">' + esc(r.desc) + '</p>' : '') + '</button>' +
+      '<div class="regalo-a">' + (l ? '<a class="b b-sec b-chico" href="' + esc(l) + '" target="_blank" rel="noopener">' + esc(dominio(l)) + '</a>' : '') +
+      '<button class="b b-sec b-chico" data-a="dado" data-id="' + r.id + '">' + (r.dado ? 'Pendiente otra vez' : 'Ya se lo di') + '</button></div></div></div>';
+}
+function hojaRegalo(id){
+  var r = id ? buscar(state.regalos, id) : null;
+  ui.regId = r ? r.id : ''; ui.regFoto = r && r.foto ? r.foto : null;
+  abrirHoja(
+    '<h2 id="ht">' + (r ? 'Idea de regalo' : 'Agregar idea de regalo') + '</h2>' +
+    '<button class="regalo-pick" data-a="regalo-foto" id="r-pick">' + (ui.regFoto ? '<img alt="" src="' + esc(fotoSrc(ui.regFoto)) + '">' : I.cam + '<span>Foto</span>') + '</button>' +
+    '<label for="r-t">¿Qué es?</label>' +
+    '<input class="campo" id="r-t" data-auto maxlength="200" placeholder="Una clase de cerámica para dos" value="' + esc(r ? r.texto : '') + '">' +
+    '<label for="r-d">Descripción</label>' +
+    '<textarea class="campo" id="r-d" maxlength="600" placeholder="Color, talla, dónde lo vio">' + esc(r ? r.desc || '' : '') + '</textarea>' +
+    '<label for="r-l">Link</label>' +
+    '<input class="campo" id="r-l" type="url" inputmode="url" maxlength="600" placeholder="https://" value="' + esc(r ? r.link || '' : '') + '">' +
+    '<label for="r-p">Precio</label>' +
+    '<input class="campo" id="r-p" maxlength="40" placeholder="$450" value="' + esc(r ? r.precio || '' : '') + '">' +
+    '<p class="error" id="r-e" role="alert"></p>' +
+    (r ? '<button class="enlace quitar" data-a="del-regalo" data-id="' + r.id + '">Borrar esta idea</button>' : '') +
+    botones('guardar-regalo', 'Guardar'), 'regalo');
 }
 
 function vistaAhora(){
@@ -2028,11 +2069,6 @@ function vistaAhora(){
         (d ? '<span class="cuando">' + cuandoTxt(dias(t, d)) + '</span>' : '') + '</div>';
     }).join('') + '</div>';
   } else h += '<div class="vacio">' + blob() + '<p>Nada pendiente</p></div>';
-  var todas = fechasTodas().filter(function(f){ return f.faltan >= 0; });
-  h += sec('Fechas', todas.length, '<button class="enlace" data-a="fecha">Agregar</button>');
-  if(todas.length) h += '<div class="tl">' + todas.map(function(f, i){
-    return '<div class="tl-i g-' + COLORES[i % COLORES.length] + (enVentana(f) ? ' toca' : '') + '">' + filaFecha(f, true) + '</div>';
-  }).join('') + '</div>';
   return {cab:cab, cuerpo:h};
 }
 
@@ -2621,7 +2657,7 @@ function vistaGenerador(){
       '<p class="gen-plan">' + esc(g.plan) + '</p>' +
       '<div class="gen-l"><span>Para comer</span><p>' + esc(g.comida) + '</p></div>' +
       '<div class="gen-l"><span>El toque</span><p>' + esc(g.toque) + '</p></div>' +
-      '<div class="hoja-b" style="margin-top:14px"><button class="b b-sec" data-a="gen-guardar">Guardar idea</button><button class="b b-pri" data-a="gen-agendar">Ponerle fecha</button></div></section>';
+      '<div class="hoja-b" style="margin-top:14px"><button class="b b-pri" data-a="gen-guardar">Guardar idea</button></div></section>';
   }
   return h;
 }
@@ -2710,13 +2746,6 @@ function hojaNota(catPre){
       '<input class="campo" id="n-l" maxlength="80" placeholder="Su restaurante favorito"></div>' +
     '<label class="opcion"><input type="checkbox" id="n-r"><span>También es una idea de regalo</span></label>' +
     '<p class="error" id="n-e" role="alert"></p>' + botones('guardar-nota', 'Guardar nota'), 'nota');
-}
-function hojaRegalo(){
-  abrirHoja(
-    '<h2 id="ht">Agregar idea de regalo</h2>' +
-    '<label for="r-t">¿Qué le regalarías?</label>' +
-    '<input class="campo" id="r-t" data-auto data-enter="guardar-regalo" maxlength="200" placeholder="Una clase de cerámica para dos">' +
-    '<p class="error" id="r-e" role="alert"></p>' + botones('guardar-regalo', 'Guardar idea'), 'regalo');
 }
 function hojaFecha(p){
   p = p || {};
@@ -3212,7 +3241,7 @@ function accion(a, el){
     case 'otro': ui.offset++; ui.nuevo = true; render(); break;
 
     case 'nota': hojaNota(v); break;
-    case 'regalo': hojaRegalo(); break;
+    case 'regalo': hojaRegalo(''); break;
     case 'fecha': hojaFecha(); break;
     case 'semana': hojaSemana(); break;
     case 'ritual': hojaRitual(); break;
@@ -3268,15 +3297,28 @@ function accion(a, el){
 
     case 'guardar-regalo':
       var rt = val('#r-t');
-      if(!rt){ falta('#r-e', 'Escribe la idea antes de guardarla.', '#r-t'); break; }
-      state.regalos.push({id:uid(), texto:rt, dado:false});
-      guardar(); cerrarHoja(); render(); toast('Idea guardada'); break;
+      if(!rt){ falta('#r-e', 'Escribe qué es.', '#r-t'); break; }
+      var rl = val('#r-l');
+      if(rl && !linkOk(rl)){ falta('#r-e', 'Ese link no se ve bien.', '#r-l'); break; }
+      var rg = ui.regId ? buscar(state.regalos, ui.regId) : null;
+      if(!rg){ rg = {id:uid(), dado:false}; state.regalos.unshift(rg); }
+      var fAntes = rg.foto;
+      rg.texto = rt; rg.desc = val('#r-d'); rg.link = rl ? linkOk(rl) : ''; rg.precio = val('#r-p'); rg.foto = ui.regFoto || null;
+      if(fAntes && fAntes.a && (!rg.foto || rg.foto.a !== fAntes.a)) soltarAsset(fAntes.a);
+      ui.regId = ''; ui.regFoto = null;
+      guardar(); cerrarHoja(); render(); toast('Guardado'); break;
+    case 'editar-regalo': hojaRegalo(id); break;
+    case 'regalo-foto': pedirFotos('regalo'); break;
     case 'dado':
       var rd = buscar(state.regalos, id); if(!rd) break;
       rd.dado = !rd.dado; guardar(); render(); break;
     case 'del-regalo':
       state.notas.forEach(function(x){ if(x.regaloId === id) delete x.regaloId; });
-      state.regalos = quitar(state.regalos, id); guardar(); render(); toast('Idea borrada'); break;
+      var rq = buscar(state.regalos, id);
+      state.regalos = quitar(state.regalos, id);
+      if(rq && rq.foto && rq.foto.a) soltarAsset(rq.foto.a);
+      if(ui.hoja === 'regalo') cerrarHoja();
+      guardar(); render(); toast('Idea borrada'); break;
 
     case 'guardar-fecha':
       var ft = val('#f-t'), fd = $('#f-d').value;
@@ -3402,6 +3444,15 @@ document.addEventListener('change', function(e){
     var lista = [].slice.call(e.target.files || []).filter(function(f){ return /^image\//.test(f.type) || /\.(heic|heif|jpe?g|png|webp|gif)$/i.test(f.name); });
     if(!lista.length) return;
     var para = ui.fotoPara;
+    if(para === 'regalo'){
+      toast('Subiendo foto…');
+      guardarImagen(lista[0], false).then(function(ref){
+        ui.regFoto = ref;
+        var pk = $('#r-pick'); if(pk) pk.innerHTML = '<img alt="" src="' + esc(fotoSrc(ref)) + '">';
+        toast('Foto lista');
+      }, errorFoto);
+      return;
+    }
     if(para === 'avatar') lista = lista.slice(0, 1);
     toast(lista.length > 1 ? 'Subiendo ' + lista.length + ' fotos…' : 'Subiendo foto…');
     var hechas = 0, cadena = Promise.resolve();
