@@ -899,13 +899,14 @@ body{background:var(--bg)}
 
 var LS_KEY = 'nov:v1';
 var CATS = [
+  {id:'tallas',  nombre:'Tallas',         ico:'tag'},
+  {id:'ordenes', nombre:'Sus órdenes',    ico:'bolsa'},
+  {id:'gente',   nombre:'Su gente',       ico:'chat'},
   {id:'gustos',  nombre:'Le gusta',       ico:'cora'},
   {id:'comida',  nombre:'Comida',         ico:'comida'},
-  {id:'ordenes', nombre:'Sus órdenes',    ico:'bolsa'},
   {id:'suenos',  nombre:'Sueños y metas', ico:'estrella'},
   {id:'dijo',    nombre:'Cosas que dijo', ico:'chat'},
-  {id:'nogusta', nombre:'No le gusta',    ico:'no'},
-  {id:'tallas',  nombre:'Tallas',         ico:'tag'}
+  {id:'nogusta', nombre:'No le gusta',    ico:'no'}
 ];
 var SITUACIONES = ['Estresada','Triste','Enojada','Enferma','Cansada'];
 var BLOQUES = [
@@ -1163,10 +1164,10 @@ var I = {
 function blank(){
   return {v:2, bienvenida:false, inicio:'', inicioEj:false, notas:[], regalos:[], fechas:[], manual:[], hechos:{},
           amor:[], amorP:{}, amorEj:false, semana:[], rituales:[], ritIni:false, focos:[], revisiones:[], aprend:[],
-          valoro:[], pedidos:[], citas:[], chequeo:{cada:30, ultimo:''}, chequeoEj:false,
+          valoro:[], pedidos:[], citas:[], chequeo:{cada:30, ultimo:''}, chequeoEj:false, checkins:[], azar:3,
           temas:[], respuestas:[], pregMias:[], gestosQuitados:[], vida:{}, vidaExtra:[], fotos:[], fotoMaria:null, log:[], retos:{}, revelado:'', actualizado:0};
 }
-var LISTAS = ['notas','regalos','fechas','manual','amor','semana','rituales','focos','revisiones','aprend','valoro','pedidos','citas','temas','vidaExtra','fotos','log','respuestas','pregMias','gestosQuitados'];
+var LISTAS = ['checkins','notas','regalos','fechas','manual','amor','semana','rituales','focos','revisiones','aprend','valoro','pedidos','citas','temas','vidaExtra','fotos','log','respuestas','pregMias','gestosQuitados'];
 function ritualesBase(){
   return RITUALES_BASE.map(function(r){ return {id:uid(), nombre:r[0], cada:r[1], ultimo:''}; });
 }
@@ -1181,6 +1182,7 @@ function normalize(o){
   if(!Object.keys(s.amorP).length && s.amor.length) s.amor.forEach(function(id){ s.amorP[id] = 5; });
   s.amor = amorTop(s.amorP);
   if(typeof s.inicio !== 'string') s.inicio = '';
+  if([0,2,3,5,7].indexOf(+s.azar) < 0) s.azar = 3; else s.azar = +s.azar;
   if(!s.chequeo || typeof s.chequeo !== 'object') s.chequeo = {cada:30, ultimo:''};
   s.chequeo.cada = 30; s.chequeoMes = true;
   if(!s.vida || typeof s.vida !== 'object' || Array.isArray(s.vida)) s.vida = {};
@@ -1203,7 +1205,7 @@ function normalize(o){
 function copia(o){ return JSON.parse(JSON.stringify(o)); }
 
 var state = normalize(null);
-var ui = {hist:null, histHold:false, pasados:[], coachQ:'', coachR:'', coachOn:false, anim:true, recOff:0, fotoPara:'', catG:'palabras', gf:{donde:'todas', costo:'todas', plan:'todas'}, gen:null, genModo:'sorpresa', genVistos:[], tab:'maria', sub:'fichas', idea:'cita', pregCat:'esto', pq:null, pqModo:'sorpresa', pqTipo:'esto', pqVistos:[], gg:null, ggModo:'sorpresa', ggTipo:'todas', ggVistos:[], gTipo:'todas', vida:'basicos', crecer:'semana', citaF:'todas', citaSel:'', filtro:'todas', abierta:null, offset:0, modo:'memoria', listo:false, hoja:null, foco:null, borrar:false};
+var ui = {hist:null, histHold:false, pasados:[], coachQ:'', coachR:'', coachOn:false, anim:true, recOff:0, fotoPara:'', catG:'palabras', gf:{donde:'todas', costo:'todas', plan:'todas'}, gen:null, genModo:'sorpresa', genVistos:[], tab:'ahora', sub:'fichas', idea:'cita', pregCat:'esto', pq:null, pqModo:'sorpresa', pqTipo:'esto', pqVistos:[], gg:null, ggModo:'sorpresa', ggTipo:'todas', ggVistos:[], gTipo:'todas', vida:'basicos', crecer:'semana', citaF:'todas', citaSel:'', filtro:'todas', abierta:null, offset:0, modo:'memoria', listo:false, hoja:null, foco:null, borrar:false};
 var docRef = null, habiaLocal = false;
 var saveTimer = null, escribiendo = false, pendiente = false;
 
@@ -1231,11 +1233,38 @@ function avisos(){
     a(masDias(f.prox, -1), 9, f.titulo, 'Es mañana.');
     a(f.prox, 9, f.titulo, 'Es hoy.');
   });
-  state.semana.forEach(function(x){ var d = parse(x.fecha); if(d) a(d, 9, 'Hoy le toca a María', x.texto); });
+  state.semana.forEach(function(x){ var d = parse(x.fecha); if(d){ a(masDias(d, -1), 20, 'Mañana', x.texto); a(d, 9, 'Hoy', x.texto); } });
   var u = parse(state.chequeo.ultimo);
   if(u) a(masDias(u, +state.chequeo.cada || 30), 10, 'Check-in con María', 'Ya toca sentarse a platicar cómo van.');
   out.sort(function(x, y){ return x.at - y.at; });
-  return out.slice(0, 50);
+  out = out.slice(0, 22);
+  return out.concat(avisosAzar(40 - out.length, ahora)).sort(function(x, y){ return x.at - y.at; });
+}
+/* avisos al azar: "+ contacto físico" a horas distintas, más seguido de lo que ella pidió */
+var AZAR_T = {palabras:'+ palabras bonitas', tiempo:'+ tiempo juntas', detalles:'+ un detalle', actos:'+ ayudarla con algo', contacto:'+ contacto físico'};
+function semilla(str){ var h = 2166136261; for(var i=0;i<str.length;i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return function(){ h = Math.imul(h ^ (h >>> 15), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909); h ^= h >>> 16; return (h >>> 0) / 4294967296; }; }
+function pesosAmor(){
+  var w = {}, ult = state.checkins[0];
+  EJES.forEach(function(e){ w[e] = Math.max(amorPunt(null, e), 1); });
+  if(ult && ult.mas && ult.mas.length) ult.mas.forEach(function(e){ if(w[e] != null) w[e] += 4; });
+  return w;
+}
+function avisosAzar(max, ahora){
+  var n = +state.azar || 0, out = [];
+  if(!n || max <= 0) return out;
+  var w = pesosAmor(), total = EJES.reduce(function(s, e){ return s + w[e]; }, 0), lu = lunes(hoy());
+  for(var sem = 0; sem < 3; sem++){
+    var ini = masDias(lu, sem * 7), r = semilla(iso(ini) + ':' + n), dias7 = [0,1,2,3,4,5,6];
+    for(var i = 0; i < n; i++){
+      var di = dias7.splice(Math.floor(r() * dias7.length), 1)[0], f = masDias(ini, di);
+      var at = new Date(f.getFullYear(), f.getMonth(), f.getDate(), 10 + Math.floor(r() * 11), Math.floor(r() * 60)).getTime();
+      var x = r() * total, eje = EJES[0];
+      for(var j = 0; j < EJES.length; j++){ x -= w[EJES[j]]; if(x < 0){ eje = EJES[j]; break; } }
+      var ideas = IDEAS_AMOR[eje] || [''];
+      if(at > ahora + 60000) out.push({at:at, titulo:AZAR_T[eje], cuerpo:ideas[Math.floor(r() * ideas.length)]});
+    }
+  }
+  return out.sort(function(x, y){ return x.at - y.at; }).slice(0, max);
 }
 function guardar(){
   state.actualizado = Date.now();
@@ -1821,15 +1850,15 @@ function render(){
   var app = $('#app');
   if(!ui.listo){ app.innerHTML = '<div class="cargando"><p>Abriendo mi cuaderno…</p></div>'; return; }
   if(!state.bienvenida){ if(!state.manual.length) state.manual = situacionesBase(); state.bienvenida = true; ui.anim = true; guardar(); }
-  if(['maria','guias','fechas'].indexOf(ui.tab) < 0) ui.tab = 'maria';
-  var v = ui.tab === 'guias' ? vistaGuias() : ui.tab === 'fechas' ? vistaFechas() : vistaMaria();
+  if(['ahora','maria','checkins','citas'].indexOf(ui.tab) < 0) ui.tab = 'ahora';
+  var v = ui.tab === 'maria' ? vistaMaria() : ui.tab === 'checkins' ? vistaCheckins() : ui.tab === 'citas' ? vistaCitas() : vistaAhora();
   app.innerHTML =
     '<header class="top"><div class="marca">Nov</div>' +
     '<button class="icono" data-a="ajustes" aria-label="Ajustes">' + I.eng + '</button></header>' +
     '<div class="cab">' + v.cab + '</div>' +
     '<main>' + v.cuerpo + '</main>' +
     '<nav class="tabs" aria-label="Secciones"><div class="tabs-in">' +
-      tabBtn('maria', 'María', I.cora) + tabBtn('guias', 'Ayuda', I.guia) + tabBtn('fechas', 'Fechas', I.cal) +
+      tabBtn('ahora', 'Ahora', I.sol) + tabBtn('maria', 'María', I.cora) + tabBtn('checkins', 'Check-ins', I.chat || I.crecer) + tabBtn('citas', 'Citas', I.cal) +
     '</div></nav>';
   if(ui.anim){
     var mn = app.querySelector('main');
@@ -1976,11 +2005,83 @@ function vistaMaria(){
         return '<button class="foto-t" role="listitem" data-a="ver-foto" data-id="' + f.id + '" aria-label="' + esc(f.nota || 'Ver foto') + '"><img alt="" loading="lazy" src="' + esc(fotoSrc(f)) + '"></button>';
       }).join('') + '</div>' +
     '';
-  var h = '<div class="seg" role="tablist">' +
-    subs.map(function(s){
-      return '<button role="tab" data-a="sub" data-v="' + s[0] + '" aria-selected="' + (ui.sub === s[0]) + '">' + s[1] + '</button>';
+  var h = vistaFichas();
+  var rp = state.regalos.filter(function(r){ return !r.dado; });
+  if(rp.length) h += sec('Ideas de regalo', rp.length) + '<div class="lista">' + rp.map(function(r){
+    return '<div class="fila"><button class="marca-dado" data-a="dado" data-id="' + r.id + '" aria-label="Ya se lo di">' + I.ok + '</button>' +
+      '<div class="fila-c"><p class="nota-x">' + esc(r.texto) + '</p></div>' +
+      '<button class="mini" data-a="del-regalo" data-id="' + r.id + '" aria-label="Borrar idea">' + I.x + '</button></div>';
+  }).join('') + '</div>';
+  return {cab:cab, cuerpo:h};
+}
+
+function vistaAhora(){
+  var t = hoy(), cab = '<h1 class="titulo">Ahora</h1>';
+  var h = '<button class="captura" style="margin-top:0" data-a="semana">' + I.mas + '<span>Anotar algo de María</span></button>';
+  if(chequeoEstado().toca) h += '<button class="tarjeta guia g-lila" data-a="checkin"><span class="ico" aria-hidden="true">' + blob('circulo', '#8E63E8') + '</span><span><b>Ya toca check-in</b></span>' + I.flecha + '</button>';
+  if(state.semana.length){
+    var ord = state.semana.slice().sort(function(a, b){ return (a.fecha || '9999') < (b.fecha || '9999') ? -1 : 1; });
+    h += sec('Lo que trae', ord.length) + '<div class="lista">' + ord.map(function(s){
+      var d = parse(s.fecha);
+      return '<div class="fila"><button class="marca-dado" data-a="seg-hecho" data-id="' + s.id + '" aria-label="Listo: ' + esc(s.texto) + '">' + I.ok + '</button>' +
+        '<div class="fila-c"><p class="nota-x">' + esc(s.texto) + '</p>' + (d ? '<p class="meta">' + esc(fechaCorta(d)) + '</p>' : '') + '</div>' +
+        (d ? '<span class="cuando">' + cuandoTxt(dias(t, d)) + '</span>' : '') + '</div>';
     }).join('') + '</div>';
-  h += ui.sub === 'querer' ? vistaQuerer() : ui.sub === 'regalos' ? vistaRegalos() : vistaFichas();
+  } else h += '<div class="vacio">' + blob() + '<p>Nada pendiente</p></div>';
+  var todas = fechasTodas().filter(function(f){ return f.faltan >= 0; });
+  h += sec('Fechas', todas.length, '<button class="enlace" data-a="fecha">Agregar</button>');
+  if(todas.length) h += '<div class="tl">' + todas.map(function(f, i){
+    return '<div class="tl-i g-' + COLORES[i % COLORES.length] + (enVentana(f) ? ' toca' : '') + '">' + filaFecha(f, true) + '</div>';
+  }).join('') + '</div>';
+  return {cab:cab, cuerpo:h};
+}
+
+function vistaCheckins(){
+  var cab = '<h1 class="titulo">Check-ins</h1>', e = chequeoEstado();
+  var h = '<section class="tarjeta cheq"><div class="cheq-top"><h2>Check-in con María</h2>' + (e.toca ? '<span class="pill pill-rosa">Ya toca</span>' : '') + '</div>' +
+    '<p class="meta">' + (e.nunca ? 'Todavía ninguno' : e.dias === 0 ? 'Hoy' : 'El último fue hace ' + plural(e.dias, 'día', 'días') + (e.toca ? '' : ' · el siguiente en ' + plural(e.faltan, 'día', 'días'))) + '</p>' +
+    '<div class="cheq-b"><button class="b ' + (e.toca ? 'b-pri' : 'b-sec') + ' b-chico" data-a="checkin">Anotar check-in</button></div></section>';
+  h += sec('Se siente querida con', 0, '<button class="enlace" data-a="amor">' + (state.amor.length ? 'Cambiar' : 'Preguntarle') + '</button>');
+  if(state.amor.length) h += '<div class="chips">' + state.amor.map(function(id){ var a = amorDe(id); return a ? '<span class="chip" aria-pressed="true">' + a.n + '</span>' : ''; }).join('') + '</div>';
+  h += sec('Avisos al azar') + '<p class="meta" style="margin:-4px 0 8px">Tipo «+ contacto físico», a cualquier hora del día</p>' +
+    chipsDe('azar', String(state.azar), [['0','No'],['2','2 a la semana'],['3','3 a la semana'],['5','5 a la semana'],['7','Diario']]).replace(' style="margin-top:4px"', '');
+  if(state.checkins.length){
+    h += sec('Historial', state.checkins.length) + '<div class="lista">' + state.checkins.map(function(c){
+      var d = parse(c.fecha), mas = (c.mas || []).map(function(id){ return (amorDe(id) || {n:id}).n.toLowerCase(); });
+      return '<div class="fila fila-f apr"><div class="fila-c"><p class="fecha-t">' + (d ? esc(fechaCorta(d)) : 'Check-in') + '</p>' +
+        (c.trae ? '<p class="meta"><b>Trae:</b> ' + esc(c.trae) + '</p>' : '') +
+        (mas.length || c.querida ? '<p class="meta"><b>Quiere más:</b> ' + esc(unir(mas)) + (mas.length && c.querida ? '. ' : '') + esc(c.querida || '') + '</p>' : '') +
+        (c.notas ? '<p class="meta"><b>Notas:</b> ' + esc(c.notas) + '</p>' : '') + '</div>' +
+        '<button class="mini" data-a="del-checkin" data-id="' + c.id + '" aria-label="Borrar check-in">' + I.x + '</button></div>';
+    }).join('') + '</div>';
+  }
+  return {cab:cab, cuerpo:h};
+}
+function hojaCheckin(){
+  abrirHoja(
+    '<h2 id="ht">Check-in</h2>' +
+    '<label for="ck-t">¿Trae algo?</label>' +
+    '<textarea class="campo" id="ck-t" data-auto maxlength="600"></textarea>' +
+    '<span class="rot" id="ck-ml">¿Cómo quiere sentirse más querida?</span>' +
+    '<div class="chips env" role="group" aria-labelledby="ck-ml" id="ck-m">' + AMOR.map(function(a){
+      return '<button class="chip" data-a="ck-op" data-v="' + a.id + '" aria-pressed="false">' + a.n + '</button>';
+    }).join('') + '</div>' +
+    '<input class="campo" id="ck-q" maxlength="300" placeholder="En sus palabras" aria-label="Cómo quiere sentirse más querida, en sus palabras">' +
+    '<label for="ck-n">Algo más</label>' +
+    '<textarea class="campo" id="ck-n" maxlength="600"></textarea>' +
+    '<p class="error" id="ck-e" role="alert"></p>' + botones('guardar-checkin', 'Guardar'), 'checkin');
+}
+
+function vistaCitas(){
+  var cab = '<h1 class="titulo">Citas</h1>';
+  var h = vistaGenerador();
+  h += sec('Mis ideas', state.citas.length);
+  if(state.citas.length) h += '<div class="lista">' + state.citas.map(function(c){
+    return '<div class="fila"><div class="fila-c"><p class="nota-x">' + esc(c.texto) + '</p></div>' +
+      '<button class="mini" data-a="del-cita" data-id="' + c.id + '" aria-label="Borrar idea">' + I.x + '</button></div>';
+  }).join('') + '</div>';
+  h += '<div class="agregar"' + (state.citas.length ? ' style="margin-top:12px"' : ' style="margin-top:0"') + '><input class="campo" data-foco="cita" data-enter="add-cita" placeholder="Una idea mía" aria-label="Nueva idea de cita" maxlength="140">' +
+    '<button class="b b-sec" data-a="add-cita">Agregar</button></div>';
   return {cab:cab, cuerpo:h};
 }
 
@@ -2634,10 +2735,10 @@ function hojaFecha(p){
 }
 function hojaSemana(){
   abrirHoja(
-    '<h2 id="ht">Lo que trae María</h2>' +
-    '<label for="s-t">¿Qué tiene encima estos días?</label>' +
-    '<input class="campo" id="s-t" data-auto maxlength="140" placeholder="Su entrega final, una plática difícil con su mamá">' +
-    '<label for="s-d">¿Tiene fecha? Es opcional</label>' +
+    '<h2 id="ht">Algo de María</h2>' +
+    '<label for="s-t">¿Qué es?</label>' +
+    '<input class="campo" id="s-t" data-auto maxlength="140" placeholder="Entrega su proyecto">' +
+    '<label for="s-d">¿Cuándo? Te aviso un día antes y ese día</label>' +
     '<input class="campo" id="s-d" type="date" min="' + iso(masDias(hoy(), -30)) + '">' +
     '<p class="error" id="s-e" role="alert"></p>' + botones('guardar-semana', 'Guardar'), 'semana');
 }
@@ -2861,6 +2962,17 @@ function accion(a, el){
     case 'tab': ui.tab = v; ui.anim = true; window.scrollTo(0, 0); render(); break;
     case 'sub': ui.sub = v; ui.anim = true; render(); break;
     case 'idea': ui.idea = v; render(); break;
+    case 'checkin': hojaCheckin(); break;
+    case 'ck-op': el.setAttribute('aria-pressed', el.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'); break;
+    case 'guardar-checkin':
+      var ckT = val('#ck-t'), ckQ = val('#ck-q'), ckN = val('#ck-n');
+      var ckM = [].map.call(document.querySelectorAll('#ck-m .chip[aria-pressed="true"]'), function(b){ return b.getAttribute('data-v'); });
+      if(!ckT && !ckQ && !ckN && !ckM.length){ falta('#ck-e', 'Anota algo antes de guardar.', '#ck-t'); break; }
+      state.checkins.unshift({id:uid(), fecha:k, trae:ckT, mas:ckM, querida:ckQ, notas:ckN});
+      state.chequeo.ultimo = k;
+      guardar(); cerrarHoja(); render(); toast('Guardado'); break;
+    case 'del-checkin': state.checkins = quitar(state.checkins, id); guardar(); render(); toast('Borrado'); break;
+    case 'azar': state.azar = +v; guardar(); render(); toast(+v ? 'Listo' : 'Sin avisos al azar'); break;
     case 'ir-ideas': ui.tab = 'guias'; ui.idea = 'pregunta'; render(); var ie = $('#ideas'); if(ie && ie.scrollIntoView) ie.scrollIntoView({block:'start'}); break;
     case 'filtro': ui.filtro = v; render(); break;
     case 'preg-cat': ui.pregCat = v; render(); break;
@@ -3181,7 +3293,7 @@ function accion(a, el){
       state.semana.push({id:uid(), texto:st, fecha:parse(sd) ? sd : ''});
       guardar(); cerrarHoja(); render(); toast('Guardado'); break;
     case 'seg-hecho':
-      state.semana = quitar(state.semana, id); guardar(); render(); toast('Seguimiento hecho'); break;
+      state.semana = quitar(state.semana, id); guardar(); render(); toast('Listo'); break;
 
     case 'guardar-ritual':
       var qt = val('#q-t');
@@ -3255,7 +3367,7 @@ function accion(a, el){
       guardar(); cerrarHoja(); render(); toast(iv ? 'Fecha guardada' : 'Fecha quitada'); break;
     case 'borrar':
       if(!ui.borrar){ ui.borrar = true; hojaAjustes(); ui.borrar = true; break; }
-      state = normalize(null); ui.tab = 'maria'; ui.sub = 'fichas'; ui.crecer = 'semana'; ui.citaSel = ''; ui.filtro = 'todas'; ui.abierta = null; ui.offset = 0;
+      state = normalize(null); ui.tab = 'ahora'; ui.sub = 'fichas'; ui.crecer = 'semana'; ui.citaSel = ''; ui.filtro = 'todas'; ui.abierta = null; ui.offset = 0;
       guardar(); cerrarHoja(); render(); toast('Todo borrado'); break;
   }
 }

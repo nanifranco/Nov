@@ -47,16 +47,6 @@ async function programarAvisos(avisos) {
     if (!permiso.granted) return;
     await Notifications.cancelAllScheduledNotificationsAsync();
 
-    await Notifications.scheduleNotificationAsync({
-      content: { title: 'Nov', body: 'Tu gesto de hoy te espera.' },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DAILY,
-        hour: 9,
-        minute: 30,
-        channelId: 'default',
-      },
-    });
-
     const ahora = Date.now();
     for (const a of (avisos || []).slice(0, 40)) {
       if (!a || typeof a.at !== 'number' || a.at <= ahora) continue;

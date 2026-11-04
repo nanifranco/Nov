@@ -4,11 +4,12 @@ Una app privada para ser mejor pareja con María: lo que le gusta, lo que te cue
 
 ## Qué tiene
 
-No es para abrirla diario. Es una herramienta para cuando la necesitas.
+No es para abrirla diario. Es para recordar cosas de María y que los avisos lleguen solos.
 
-- **María:** lo que sé de ella (gustos, comida, sus órdenes, tallas…), cómo quererla (cómo se siente querida, lo que me ha pedido, sus respuestas) y regalos.
-- **Ayuda:** antes de contestar, disculparme bien, decir algo difícil, qué hacer según cómo esté, y una idea al azar: cita, gesto o pregunta.
-- **Fechas:** el check-in mensual y sus fechas importantes. Los avisos llegan solos.
+- **Ahora:** lo que trae María (una entrega el domingo, algo que no va en el calendario), con aviso un día antes y ese día, y las fechas importantes.
+- **María:** lo que sé de ella: tallas, sus órdenes, su gente (cómo se llaman sus amigas), lo que le gusta, y las ideas de regalo.
+- **Check-ins:** el check-in mensual con historial (si trae algo, cómo quiere sentirse más querida, notas) y los avisos al azar tipo «+ contacto físico», más seguido de lo que ella pidió.
+- **Citas:** el generador de citas y mis ideas.
 
 ## Estructura
 
