@@ -2980,7 +2980,17 @@ function hojaAvatar(){
 function seccionAvisos(){
   if(RN) return '';
   var c = pushCfg(), h = '<div class="linea"><h3 class="sub" style="margin:0 0 8px">Avisos</h3>';
-  if(!pushPuede() || !enInicio()) return h + '<p class="estado">Para que te lleguen, abre Nov desde el ícono de tu pantalla de inicio (en Safari: Compartir, Agregar a inicio).</p></div>';
+  if(!pushPuede() || !enInicio()){
+    var falta = [];
+    if(location.protocol !== 'https:') falta.push('no es https');
+    if(!('serviceWorker' in navigator)) falta.push('sin service worker');
+    if(!('PushManager' in window)) falta.push('sin push');
+    if(!('Notification' in window)) falta.push('sin notificaciones');
+    if(!enInicio()) falta.push('no está abierta desde inicio');
+    var ios = (navigator.userAgent.match(/OS (\d+)_(\d+)/) || []).slice(1).join('.');
+    return h + '<p class="estado">Para que te lleguen, abre Nov desde el ícono de tu pantalla de inicio (en Safari: Compartir, Agregar a inicio).</p>' +
+      '<p class="meta" style="margin-top:8px">' + esc(falta.join(' · ') + (ios ? ' · iOS ' + ios : '') + ' · ' + location.host + location.pathname) + '</p></div>';
+  }
   if(c && Notification.permission === 'granted'){
     return h + '<p class="estado" style="margin-bottom:10px">Activados</p>' +
       '<div class="hoja-b" style="margin-top:0"><button class="b b-sec" data-a="push-prueba">Mandar uno de prueba</button><button class="b b-sec" data-a="push-apagar">Apagar</button></div></div>';
