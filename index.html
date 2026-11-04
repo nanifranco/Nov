@@ -1869,7 +1869,7 @@ function render(){
     '<div class="cab">' + v.cab + '</div>' +
     '<main>' + v.cuerpo + '</main>' +
     '<nav class="tabs" aria-label="Secciones"><div class="tabs-in">' +
-      tabBtn('ahora', 'Ahora', I.sol) + tabBtn('maria', 'María', I.cora) + tabBtn('checkins', 'Check-ins', I.chat || I.crecer) + tabBtn('citas', 'Citas', I.cal) +
+      tabBtn('ahora', 'Ahora', I.sol) + tabBtn('maria', 'María', I.cora) + tabBtn('checkins', 'Check-ins', I.chat || I.crecer) + tabBtn('citas', 'Citas', I.estrella) +
     '</div></nav>';
   if(ui.anim){
     var mn = app.querySelector('main');
@@ -2065,7 +2065,7 @@ function vistaAhora(){
     h += sec('Lo que trae', ord.length) + '<div class="lista">' + ord.map(function(s){
       var d = parse(s.fecha);
       return '<div class="fila"><button class="marca-dado" data-a="seg-hecho" data-id="' + s.id + '" aria-label="Listo: ' + esc(s.texto) + '">' + I.ok + '</button>' +
-        '<div class="fila-c"><p class="nota-x">' + esc(s.texto) + '</p>' + (d ? '<p class="meta">' + esc(fechaCorta(d)) + '</p>' : '') + '</div>' +
+        '<button class="fila-c regalo-b" data-a="editar-semana" data-id="' + s.id + '"><p class="nota-x">' + esc(s.texto) + '</p>' + (d ? '<p class="meta">' + esc(fechaCorta(d)) + '</p>' : '<p class="meta">Sin fecha</p>') + '</button>' +
         (d ? '<span class="cuando">' + cuandoTxt(dias(t, d)) + '</span>' : '') + '</div>';
     }).join('') + '</div>';
   } else h += '<div class="vacio">' + blob() + '<p>Nada pendiente</p></div>';
@@ -2762,14 +2762,19 @@ function hojaFecha(p){
     }).join('') + '</select>' +
     '<p class="error" id="f-e" role="alert"></p>' + botones('guardar-fecha', 'Guardar fecha'), 'fecha');
 }
-function hojaSemana(){
+function hojaSemana(id){
+  var x = id ? buscar(state.semana, id) : null, conFecha = !!(x && x.fecha);
+  ui.semId = x ? x.id : '';
   abrirHoja(
     '<h2 id="ht">Algo de María</h2>' +
     '<label for="s-t">¿Qué es?</label>' +
-    '<input class="campo" id="s-t" data-auto maxlength="140" placeholder="Entrega su proyecto">' +
-    '<label for="s-d">¿Cuándo? Te aviso un día antes y ese día</label>' +
-    '<input class="campo" id="s-d" type="date" min="' + iso(masDias(hoy(), -30)) + '">' +
-    '<p class="error" id="s-e" role="alert"></p>' + botones('guardar-semana', 'Guardar'), 'semana');
+    '<input class="campo" id="s-t" data-auto maxlength="140" placeholder="Entrega su proyecto" value="' + esc(x ? x.texto : '') + '">' +
+    '<button class="chip" id="s-fb" data-a="sem-fecha" aria-pressed="' + conFecha + '" style="margin-top:12px">' + (conFecha ? 'Con fecha' : '+ Ponerle fecha') + '</button>' +
+    '<div id="s-fw"' + (conFecha ? '' : ' hidden') + '><input class="campo" id="s-d" type="date" value="' + esc(x && x.fecha ? x.fecha : '') + '" aria-label="Fecha" style="margin-top:8px">' +
+    '<p class="meta" style="margin-top:6px">Te aviso un día antes y ese día</p></div>' +
+    '<p class="error" id="s-e" role="alert"></p>' +
+    (x ? '<button class="enlace quitar" data-a="seg-hecho" data-id="' + x.id + '">Ya pasó, quitarlo</button>' : '') +
+    botones('guardar-semana', 'Guardar'), 'semana');
 }
 function hojaRitual(){
   abrirHoja(
@@ -3243,7 +3248,12 @@ function accion(a, el){
     case 'nota': hojaNota(v); break;
     case 'regalo': hojaRegalo(''); break;
     case 'fecha': hojaFecha(); break;
-    case 'semana': hojaSemana(); break;
+    case 'semana': hojaSemana(''); break;
+    case 'editar-semana': hojaSemana(id); break;
+    case 'sem-fecha':
+      var on = el.getAttribute('aria-pressed') !== 'true';
+      el.setAttribute('aria-pressed', on); el.textContent = on ? 'Con fecha' : '+ Ponerle fecha';
+      $('#s-fw').hidden = !on; if(on) $('#s-d').focus(); break;
     case 'ritual': hojaRitual(); break;
     case 'aprend': hojaAprend(); break;
     case 'amor': hojaAmor(); break;
@@ -3330,11 +3340,15 @@ function accion(a, el){
       state.fechas = quitar(state.fechas, id); guardar(); render(); toast('Fecha quitada'); break;
 
     case 'guardar-semana':
-      var st = val('#s-t'), sd = $('#s-d').value;
-      if(!st){ falta('#s-e', 'Escribe qué tiene encima.', '#s-t'); break; }
-      state.semana.push({id:uid(), texto:st, fecha:parse(sd) ? sd : ''});
+      var st = val('#s-t'), usaF = $('#s-fb').getAttribute('aria-pressed') === 'true', sd = usaF ? $('#s-d').value : '';
+      if(!st){ falta('#s-e', 'Escribe qué es.', '#s-t'); break; }
+      if(usaF && !parse(sd)){ falta('#s-e', 'Elige la fecha o quítala.', '#s-d'); break; }
+      var sx = ui.semId ? buscar(state.semana, ui.semId) : null;
+      if(sx){ sx.texto = st; sx.fecha = sd || ''; } else state.semana.push({id:uid(), texto:st, fecha:sd || ''});
+      ui.semId = '';
       guardar(); cerrarHoja(); render(); toast('Guardado'); break;
     case 'seg-hecho':
+      if(ui.hoja === 'semana') cerrarHoja();
       state.semana = quitar(state.semana, id); guardar(); render(); toast('Listo'); break;
 
     case 'guardar-ritual':
