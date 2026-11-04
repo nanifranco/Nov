@@ -2130,7 +2130,7 @@ function hojaRegalo(id){
     botones('guardar-regalo', 'Guardar'), 'regalo');
 }
 
-function recOn(x){ return x.rec === undefined ? !!x.fecha : !!x.rec; }
+function recOn(x){ return !!x.rec; }
 function vistaAhora(){
   var t = hoy();
   var cab = '<p class="fecha-hoy">' + esc(fechaCorta(t)) + '</p><h1 class="titulo">Ahora</h1>';
@@ -3480,7 +3480,7 @@ function accion(a, el){
       if(!st){ falta('#s-e', 'Escribe qué es.', '#s-t'); break; }
       if(usaF && !parse(sd)){ falta('#s-e', 'Elige la fecha o quítala.', '#s-d'); break; }
       var sx = ui.semId ? buscar(state.semana, ui.semId) : null;
-      if(sx){ sx.texto = st; sx.fecha = sd || ''; } else state.semana.push({id:uid(), texto:st, fecha:sd || '', rec:!!sd});
+      if(sx){ sx.texto = st; sx.fecha = sd || ''; } else state.semana.push({id:uid(), texto:st, fecha:sd || '', rec:false});
       ui.semId = '';
       guardar(); cerrarHoja(); render(); toast('Guardado'); break;
     case 'seg-hecho':
