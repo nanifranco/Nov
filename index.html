@@ -330,7 +330,7 @@ textarea.campo{min-height:104px;resize:vertical;line-height:1.4}
 .gesto .b-pri,.hecho-chip{color:#111113}
 .dot.on i{background:#FFFFFF;border-color:#FFFFFF}
 .b-pri{box-shadow:0 10px 18px -14px rgba(0,0,0,.55)}
-.ico-gustos,.ico-comida,.ico-tallas,.ico-nogusta,.ico-dijo,.ico-suenos{background:var(--fill);color:var(--text)}
+.ico-gustos,.ico-mundo,.ico-comida,.ico-tallas,.ico-nogusta,.ico-dijo,.ico-suenos{background:var(--fill);color:var(--text)}
 .preg-l{color:var(--muted)}
 .mini[aria-pressed="true"]{color:var(--rosa);background:var(--rosa-soft)}
 .anillo-w{color:var(--rosa);background:var(--rosa-soft)}
@@ -949,12 +949,7 @@ var LS_KEY = 'nov:v1';
 var CATS = [
   {id:'tallas',  nombre:'Tallas',         ico:'tag'},
   {id:'ordenes', nombre:'Sus órdenes',    ico:'bolsa'},
-  {id:'gente',   nombre:'Su gente',       ico:'chat'},
-  {id:'gustos',  nombre:'Le gusta',       ico:'cora'},
-  {id:'comida',  nombre:'Comida',         ico:'comida'},
-  {id:'suenos',  nombre:'Sueños y metas', ico:'estrella'},
-  {id:'dijo',    nombre:'Cosas que dijo', ico:'chat'},
-  {id:'nogusta', nombre:'No le gusta',    ico:'no'}
+  {id:'mundo',   nombre:'Su mundo',       ico:'cora'}
 ];
 var SITUACIONES = ['Estresada','Triste','Enojada','Enferma','Cansada'];
 var BLOQUES = [
@@ -1224,6 +1219,7 @@ function normalize(o){
   var s = blank();
   if(o && typeof o === 'object') Object.assign(s, o);
   LISTAS.forEach(function(k){ if(!Array.isArray(s[k])) s[k] = []; });
+  s.notas.forEach(function(n){ if(['tallas','ordenes','mundo'].indexOf(n.cat) < 0) n.cat = 'mundo'; });
   s.manual.forEach(function(m){ BLOQUES.forEach(function(bl){ if(!Array.isArray(m[bl.id])) m[bl.id] = []; }); });
   s.revisiones.forEach(function(r){ if(!r.focos || typeof r.focos !== 'object') r.focos = {}; });
   if(!s.hechos || typeof s.hechos !== 'object') s.hechos = {};
@@ -2739,7 +2735,7 @@ function generarCita(){
   if(ords.length && Math.random() < .4){ var o = elegir(ords); c = ['Su orden de ' + o.lugar + ': ' + o.texto.charAt(0).toLowerCase() + o.texto.slice(1), 1]; }
   var toques = TOQUES.slice();
   state.regalos.filter(function(r){ return !r.dado; }).forEach(function(r){ toques.push('Llévale algo de tu lista: «' + r.texto + '»'); });
-  state.notas.filter(function(n){ return n.cat === 'gustos'; }).forEach(function(n){ toques.push('Mete algo que le gusta: «' + n.texto + '»'); });
+  state.notas.filter(function(n){ return n.cat === 'mundo'; }).forEach(function(n){ toques.push('Mete algo de su mundo: «' + n.texto + '»'); });
   var costo = a[2] === '?' ? c[1] : Math.max(+a[2], c[1]);
   return {plan:a[0], comida:c[0], toque:elegir(toques), lugar:lugar, costo:costo, mia:!!a[4], vibe:a[3]};
 }
@@ -2829,7 +2825,7 @@ function botones(accion, texto){
 }
 
 function hojaNota(catPre){
-  var cat = catPre || ((ui.tab === 'maria' && ui.filtro !== 'todas') ? ui.filtro : 'gustos');
+  var cat = catPre || ((ui.tab === 'maria' && ui.filtro !== 'todas') ? ui.filtro : 'mundo');
   abrirHoja(
     '<h2 id="ht">Anotar algo sobre María</h2>' +
     '<label for="n-t">¿Qué quiero recordar?</label>' +
@@ -3415,7 +3411,7 @@ function accion(a, el){
       var tx = val('#n-t');
       if(!tx){ falta('#n-e', 'Escribe la nota antes de guardarla.', '#n-t'); break; }
       var sel = $('#hoja .chip[aria-pressed="true"]');
-      var n = {id:uid(), cat: sel ? sel.getAttribute('data-v') : 'gustos', texto:tx};
+      var n = {id:uid(), cat: sel ? sel.getAttribute('data-v') : 'mundo', texto:tx};
       if(n.cat === 'ordenes'){
         var lg = val('#n-l');
         if(!lg){ falta('#n-e', 'Escribe de dónde es la orden.', '#n-l'); break; }
