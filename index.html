@@ -1,14 +1,14 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Nov</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Nov">
-<meta name="theme-color" content="#FFFFFF">
+<meta name="theme-color" content="#0B0B0C">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
 <link rel="icon" href="icon-192.png?v=2">
 <link rel="manifest" href="manifest.json">
@@ -918,11 +918,19 @@ body{background:var(--bg)}
 .fab svg{width:26px;height:26px}
 main:has(.fab){padding-bottom:84px}
 .vacio .blob{width:56px;height:56px;margin:0 auto 10px}
-@media (prefers-color-scheme: dark){
-  .ahora-hero{background:#221D3A;color:#F5F5F7}
-  .ahora-hero .ahora-m{color:#B9B2D6}
-  .cuando.pronto{background:#241E3D;color:#A08BFF}
-}
+:root[data-theme="dark"] .ahora-hero{background:#221D3A;color:#F5F5F7}
+:root[data-theme="dark"] .ahora-hero .ahora-m{color:#B9B2D6}
+:root[data-theme="dark"] .ahora-l{color:#A08BFF}
+:root[data-theme="dark"] .cuando.pronto{background:#241E3D;color:#A08BFF}
+:root[data-theme="dark"] .aviso-ck b{color:#A08BFF}
+:root[data-theme="dark"] .regalo-c{background:var(--surface);border-color:var(--line)}
+:root[data-theme="dark"] .regalo-f{background:var(--fill)}
+:root[data-theme="dark"] .regalo-pick{background:var(--fill);border-color:var(--line2);color:var(--muted)}
+.rec-b{flex:none;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;color:var(--muted);background:transparent;opacity:.55}
+.rec-b svg{width:20px;height:20px}
+.rec-b[aria-pressed="true"]{background:#241E3D;color:#A08BFF;opacity:1}
+.ahora-hb{display:flex;align-items:center;gap:18px;flex:1;min-width:0;text-align:left;color:inherit}
+.ahora-hero .rec-b{align-self:flex-start}
 </style>
 </head>
 <body>
@@ -1192,6 +1200,7 @@ var I = {
   bolsa: svg('<path d="M5 8h14l-1.2 12.5H6.2z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/>'),
   flama: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 21.5c-4.1 0-6.8-2.7-6.8-6.5 0-3.4 2.3-5.5 3.8-7.6.4 1.9 1.5 3.1 2.8 3.5.8-2.7 1.7-5.6 4-7.6.2 2.9 1.7 4.6 2.8 6.2 1 1.5 1.4 3 1.4 4.6 0 4.4-2.7 7.4-6.8 7.4z"/><path fill="#FFC23D" d="M12 21.2c-2.3 0-3.8-1.5-3.8-3.6 0-1.9 1.3-3 2.2-4.3.3 1 .9 1.6 1.6 1.9.5-1.5 1-2.9 2.2-4 .6 2.4 1.7 3.6 1.7 5.6 0 2.6-1.6 4.4-3.9 4.4z"/><circle cx="10.4" cy="17.4" r="1" fill="#1B1530"/><circle cx="13.6" cy="17.4" r="1" fill="#1B1530"/></svg>',
   play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"/></svg>',
+  campana: svg('<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>'),
   cam: svg('<path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>'),
   tag: svg('<path d="M3.5 12.5V4.5h8l9 9-8 8z"/><circle cx="8" cy="9" r="1.3"/>'),
   no: svg('<circle cx="12" cy="12" r="8.5"/><path d="M6 6l12 12"/>'),
@@ -1274,7 +1283,12 @@ function avisos(lim, semanas){
     a(masDias(f.prox, -1), 9, f.titulo, 'Es mañana.');
     a(f.prox, 9, f.titulo, 'Es hoy.');
   });
-  state.semana.forEach(function(x){ var d = parse(x.fecha); if(d){ a(masDias(d, -1), 20, 'Mañana', x.texto); a(d, 9, 'Hoy', x.texto); } });
+  state.semana.forEach(function(x){
+    if(!recOn(x)) return;
+    var d = parse(x.fecha);
+    if(d){ a(masDias(d, -1), 9, x.texto, 'Es mañana'); a(d, 9, x.texto, 'Es hoy'); }
+    else for(var di = 0; di < 30; di++) a(masDias(hoy(), di), 10, x.texto, 'Recordatorio de María');
+  });
   var u = parse(state.chequeo.ultimo);
   if(u) a(masDias(u, +state.chequeo.cada || 30), 10, 'Check-in con María', 'Ya toca sentarse a platicar cómo van.');
   out.sort(function(x, y){ return x.at - y.at; });
@@ -2116,6 +2130,7 @@ function hojaRegalo(id){
     botones('guardar-regalo', 'Guardar'), 'regalo');
 }
 
+function recOn(x){ return x.rec === undefined ? !!x.fecha : !!x.rec; }
 function vistaAhora(){
   var t = hoy();
   var cab = '<p class="fecha-hoy">' + esc(fechaCorta(t)) + '</p><h1 class="titulo">Ahora</h1>';
@@ -2133,15 +2148,16 @@ function vistaAhora(){
     return '<div class="ahora-f">' +
       '<button class="marca-dado" data-a="seg-hecho" data-id="' + x.id + '" aria-label="Listo: ' + esc(x.texto) + '">' + I.ok + '</button>' +
       '<button class="ahora-t" data-a="editar-semana" data-id="' + x.id + '"><span class="ahora-x">' + esc(x.texto) + '</span>' +
-        (d ? '<span class="ahora-m">' + esc(fechaCorta(d)) + '</span>' : '') + '</button>' +
-      (d ? '<span class="cuando' + (i.n <= 2 ? ' pronto' : '') + '">' + cuandoTxt(i.n) + '</span>' : '') + '</div>';
+        '<span class="ahora-m">' + (d ? esc(fechaCorta(d)) + ' · ' + cuandoTxt(i.n).toLowerCase() : (recOn(x) ? 'Recordatorio diario' : 'Sin fecha')) + '</span></button>' +
+      '<button class="rec-b" data-a="rec" data-id="' + x.id + '" aria-pressed="' + recOn(x) + '" aria-label="Recordatorio ' + (recOn(x) ? 'prendido' : 'apagado') + '">' + I.campana + '</button></div>';
   }
   var prox = con.filter(function(i){ return i.n >= 0; })[0];
   if(prox){
-    h += '<button class="ahora-hero" data-a="editar-semana" data-id="' + prox.x.id + '">' +
+    h += '<div class="ahora-hero"><button class="ahora-hb" data-a="editar-semana" data-id="' + prox.x.id + '">' +
       '<span class="ahora-dia"><b>' + prox.d.getDate() + '</b><i>' + MESES[prox.d.getMonth()] + '</i></span>' +
       '<span class="ahora-hx"><span class="ahora-l">Lo próximo</span><span class="ahora-ht">' + esc(prox.x.texto) + '</span>' +
-      '<span class="ahora-m">' + cuandoTxt(prox.n) + '</span></span></button>';
+      '<span class="ahora-m">' + cuandoTxt(prox.n) + '</span></span></button>' +
+      '<button class="rec-b" data-a="rec" data-id="' + prox.x.id + '" aria-pressed="' + recOn(prox.x) + '" aria-label="Recordatorio ' + (recOn(prox.x) ? 'prendido' : 'apagado') + '">' + I.campana + '</button></div>';
   }
   var resto = con.filter(function(i){ return i !== prox; });
   var semana = resto.filter(function(i){ return i.n <= 7; }), luego = resto.filter(function(i){ return i.n > 7; });
@@ -2851,7 +2867,9 @@ function hojaSemana(id){
     '<input class="campo" id="s-t" data-auto maxlength="140" placeholder="Entrega su proyecto" value="' + esc(x ? x.texto : '') + '">' +
     '<button class="chip" id="s-fb" data-a="sem-fecha" aria-pressed="' + conFecha + '" style="margin-top:12px">' + (conFecha ? 'Con fecha' : '+ Ponerle fecha') + '</button>' +
     '<div id="s-fw"' + (conFecha ? '' : ' hidden') + '><input class="campo" id="s-d" type="date" value="' + esc(x && x.fecha ? x.fecha : '') + '" aria-label="Fecha" style="margin-top:8px">' +
-    '<p class="meta" style="margin-top:6px">Te aviso un día antes y ese día</p></div>' +
+    '</div>' +
+    '<label class="opcion" style="margin-top:14px"><input type="checkbox" id="s-r"' + ((x ? recOn(x) : false) ? ' checked' : '') + '><span>Recordatorio</span></label>' +
+    '<p class="meta" style="margin:4px 0 0 34px">Con fecha: un día antes y ese día. Sin fecha: diario a las 10.</p>' +
     '<p class="error" id="s-e" role="alert"></p>' +
     (x ? '<button class="enlace quitar" data-a="seg-hecho" data-id="' + x.id + '">Ya pasó, quitarlo</button>' : '') +
     botones('guardar-semana', 'Guardar'), 'semana');
@@ -3366,10 +3384,14 @@ function accion(a, el){
     case 'fecha': hojaFecha(); break;
     case 'semana': hojaSemana(''); break;
     case 'editar-semana': hojaSemana(id); break;
+    case 'rec':
+      var rx = buscar(state.semana, id); if(!rx) break;
+      rx.rec = !recOn(rx); guardar(); render();
+      toast(rx.rec ? (rx.fecha ? 'Te aviso un día antes y ese día' : 'Te lo recuerdo diario a las 10') : 'Recordatorio apagado'); break;
     case 'sem-fecha':
       var on = el.getAttribute('aria-pressed') !== 'true';
       el.setAttribute('aria-pressed', on); el.textContent = on ? 'Con fecha' : '+ Ponerle fecha';
-      $('#s-fw').hidden = !on; if(on) $('#s-d').focus(); break;
+      $('#s-fw').hidden = !on; if(on){ $('#s-d').focus(); if($('#s-r') && !ui.semId) $('#s-r').checked = true; } break;
     case 'ritual': hojaRitual(); break;
     case 'aprend': hojaAprend(); break;
     case 'amor': hojaAmor(); break;
@@ -3460,7 +3482,8 @@ function accion(a, el){
       if(!st){ falta('#s-e', 'Escribe qué es.', '#s-t'); break; }
       if(usaF && !parse(sd)){ falta('#s-e', 'Elige la fecha o quítala.', '#s-d'); break; }
       var sx = ui.semId ? buscar(state.semana, ui.semId) : null;
-      if(sx){ sx.texto = st; sx.fecha = sd || ''; } else state.semana.push({id:uid(), texto:st, fecha:sd || ''});
+      var sr = $('#s-r') ? $('#s-r').checked : !!sd;
+      if(sx){ sx.texto = st; sx.fecha = sd || ''; sx.rec = sr; } else state.semana.push({id:uid(), texto:st, fecha:sd || '', rec:sr});
       ui.semId = '';
       guardar(); cerrarHoja(); render(); toast('Guardado'); break;
     case 'seg-hecho':
