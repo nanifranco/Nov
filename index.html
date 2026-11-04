@@ -1282,7 +1282,7 @@ function avisosAzar(max, ahora, semanas){
 var PUSH_KEY = 'nov:push';
 function pushCfg(){ try{ return JSON.parse(localStorage.getItem(PUSH_KEY) || 'null'); }catch(e){ return null; } }
 function pushGuardar(c){ try{ c ? localStorage.setItem(PUSH_KEY, JSON.stringify(c)) : localStorage.removeItem(PUSH_KEY); }catch(e){} }
-function pushPuede(){ return !RN && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window && location.protocol === 'https:'; }
+function pushPuede(){ return !RN && 'serviceWorker' in navigator && location.protocol === 'https:'; }
 function enInicio(){ return (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; }
 function b64aBytes(s){ var t = atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)); var u = new Uint8Array(t.length); for(var i=0;i<t.length;i++) u[i] = t.charCodeAt(i); return u; }
 function servidorUrl(u){ u = String(u || '').trim().replace(/\/+$/, ''); if(u && !/^https?:\/\//i.test(u)) u = 'https://' + u; return u; }
@@ -1295,12 +1295,14 @@ function pushSync(){
 function pushActivar(url){
   url = servidorUrl(url);
   if(!url) return Promise.reject(new Error('Pega el link del servidor.'));
-  return Notification.requestPermission().then(function(p){
-    if(p !== 'granted') throw new Error('No diste permiso. Actívalo en Ajustes del iPhone, Notificaciones, Nov.');
+  if(!window.Notification || !Notification.requestPermission) return Promise.reject(new Error('Este iPhone no deja pedir permiso de notificaciones aquí. Abre Nov desde el ícono de inicio.'));
+  return Promise.resolve(Notification.requestPermission()).then(function(p){
+    if(p !== 'granted') throw new Error('No diste permiso. Actívalo en Settings, Notifications, Nov.');
     return Promise.all([navigator.serviceWorker.register('sw.js').then(function(){ return navigator.serviceWorker.ready; }),
       fetch(url + '/llave').then(function(r){ if(!r.ok) throw 0; return r.json(); }).catch(function(){ throw new Error('No encontré el servidor en ese link.'); })]);
   }).then(function(r){
     var reg = r[0], llave = r[1].llave;
+    if(!reg.pushManager) throw new Error('Este iPhone no tiene push para Nov (pushManager). Revisa Feature Flags, Push API.');
     return reg.pushManager.getSubscription().then(function(viejo){ return viejo ? viejo.unsubscribe() : null; }).then(function(){
       return reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:b64aBytes(llave)});
     });
@@ -2980,7 +2982,7 @@ function hojaAvatar(){
 function seccionAvisos(){
   if(RN) return '';
   var c = pushCfg(), h = '<div class="linea"><h3 class="sub" style="margin:0 0 8px">Avisos</h3>';
-  if(!pushPuede() || !enInicio()){
+  if(!pushPuede() || (!enInicio() && !('PushManager' in window))){
     var falta = [];
     if(location.protocol !== 'https:') falta.push('no es https');
     if(!('serviceWorker' in navigator)) falta.push('sin service worker');
@@ -2991,7 +2993,7 @@ function seccionAvisos(){
     return h + '<p class="estado">Para que te lleguen, abre Nov desde el ícono de tu pantalla de inicio (en Safari: Compartir, Agregar a inicio).</p>' +
       '<p class="meta" style="margin-top:8px">' + esc(falta.join(' · ') + (ios ? ' · iOS ' + ios : '') + ' · ' + location.host + location.pathname) + '</p></div>';
   }
-  if(c && Notification.permission === 'granted'){
+  if(c && window.Notification && Notification.permission === 'granted'){
     return h + '<p class="estado" style="margin-bottom:10px">Activados</p>' +
       '<div class="hoja-b" style="margin-top:0"><button class="b b-sec" data-a="push-prueba">Mandar uno de prueba</button><button class="b b-sec" data-a="push-apagar">Apagar</button></div></div>';
   }
@@ -3055,7 +3057,7 @@ function accion(a, el){
       var srv = val('#a-srv'); el.disabled = true; el.textContent = 'Activando…';
       pushActivar(srv).then(function(r){
         hojaAjustes(); toast(r && r.ok ? 'Avisos activados' : 'Activados, pero no pude mandar la lista. Lo intento al guardar.');
-      }, function(e){ el.disabled = false; el.textContent = 'Activar avisos'; var pe = $('#a-pe'); if(pe) pe.textContent = (e && e.message) || 'No se pudo activar.'; });
+      }, function(e){ el.disabled = false; if(e && e.name) e = {message: (e.message || '') + ' (' + e.name + ')'}; el.textContent = 'Activar avisos'; var pe = $('#a-pe'); if(pe) pe.textContent = (e && e.message) || 'No se pudo activar.'; });
       break;
     case 'push-prueba':
       var pc = pushCfg(); if(!pc) break;
