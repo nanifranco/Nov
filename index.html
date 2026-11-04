@@ -2986,7 +2986,7 @@ function seccionAvisos(){
       '<div class="hoja-b" style="margin-top:0"><button class="b b-sec" data-a="push-prueba">Mandar uno de prueba</button><button class="b b-sec" data-a="push-apagar">Apagar</button></div></div>';
   }
   return h + '<label for="a-srv">Link del servidor</label>' +
-    '<input class="campo" id="a-srv" type="url" inputmode="url" placeholder="https://nov-avisos….workers.dev" value="' + esc(c && c.url || '') + '">' +
+    '<input class="campo" id="a-srv" type="url" inputmode="url" placeholder="https://nov-avisos….workers.dev" value="' + esc(c && c.url || 'https://nov-avisos.nanifranco.workers.dev') + '">' +
     '<p class="error" id="a-pe" role="alert"></p>' +
     '<button class="b b-pri b-ancho" style="margin-top:10px" data-a="push-activar">Activar avisos</button></div>';
 }
