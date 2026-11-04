@@ -4,11 +4,11 @@ Una app privada para ser mejor pareja con María: lo que le gusta, lo que te cue
 
 ## Qué tiene
 
-- **Hoy:** *Antes de verla*, un modo de historias a pantalla completa con lo que trae María, una pregunta, algo que no le has dicho y lo pendiente; el gesto del día (una carta que se voltea), la racha con el calendario de las últimas 12 semanas, el reto de la semana, el tiempo juntas, un recuerdo con foto, lo que hace rato no haces, lo que trae María y las próximas fechas.
-- **María:** su foto y sus fotos, cómo se siente querida, su vida (lo que te cuenta), fichas (incluidas sus órdenes), regalos y el muro de lo que valoras de ella.
-- **Crecer:** el radar de cómo la estás queriendo en los últimos 30 días, el chequeo mensual, lo que te ha pedido, en qué quieres mejorar, temas por hablar, tus gestos con frecuencia, un mazo de gestos para deslizar (derecha lo quiero, izquierda paso) y lo que aprendiste.
-- **Guías:** *Pregúntale a Nov*, un consejero que responde con lo que tienes anotado de María (solo dentro de Claude); antes de contestar, disculparme bien, decir algo difícil, el generador de citas, ideas de cita y su manual.
-- **Fechas:** línea de tiempo con avisos antes de cada fecha.
+No es para abrirla diario. Es una herramienta para cuando la necesitas.
+
+- **María:** lo que sé de ella (gustos, comida, sus órdenes, tallas…), cómo quererla (cómo se siente querida, lo que me ha pedido, sus respuestas) y regalos.
+- **Ayuda:** antes de contestar, disculparme bien, decir algo difícil, qué hacer según cómo esté, y una idea al azar: cita, gesto o pregunta.
+- **Fechas:** el check-in mensual y sus fechas importantes. Los avisos llegan solos.
 
 ## Estructura
 

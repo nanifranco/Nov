@@ -1203,7 +1203,7 @@ function normalize(o){
 function copia(o){ return JSON.parse(JSON.stringify(o)); }
 
 var state = normalize(null);
-var ui = {hist:null, histHold:false, pasados:[], coachQ:'', coachR:'', coachOn:false, anim:true, recOff:0, fotoPara:'', catG:'palabras', gf:{donde:'todas', costo:'todas', plan:'todas'}, gen:null, genModo:'sorpresa', genVistos:[], tab:'hoy', sub:'preguntas', pregCat:'esto', pq:null, pqModo:'sorpresa', pqTipo:'esto', pqVistos:[], gg:null, ggModo:'sorpresa', ggTipo:'todas', ggVistos:[], gTipo:'todas', vida:'basicos', crecer:'semana', citaF:'todas', citaSel:'', filtro:'todas', abierta:null, offset:0, modo:'memoria', listo:false, hoja:null, foco:null, borrar:false};
+var ui = {hist:null, histHold:false, pasados:[], coachQ:'', coachR:'', coachOn:false, anim:true, recOff:0, fotoPara:'', catG:'palabras', gf:{donde:'todas', costo:'todas', plan:'todas'}, gen:null, genModo:'sorpresa', genVistos:[], tab:'maria', sub:'fichas', idea:'cita', pregCat:'esto', pq:null, pqModo:'sorpresa', pqTipo:'esto', pqVistos:[], gg:null, ggModo:'sorpresa', ggTipo:'todas', ggVistos:[], gTipo:'todas', vida:'basicos', crecer:'semana', citaF:'todas', citaSel:'', filtro:'todas', abierta:null, offset:0, modo:'memoria', listo:false, hoja:null, foco:null, borrar:false};
 var docRef = null, habiaLocal = false;
 var saveTimer = null, escribiendo = false, pendiente = false;
 
@@ -1233,11 +1233,7 @@ function avisos(){
   });
   state.semana.forEach(function(x){ var d = parse(x.fecha); if(d) a(d, 9, 'Hoy le toca a María', x.texto); });
   var u = parse(state.chequeo.ultimo);
-  if(u) a(masDias(u, +state.chequeo.cada || 30), 10, 'Chequeo con María', 'Ya toca sentarse a platicar cómo van.');
-  state.rituales.forEach(function(x){
-    var ul = parse(x.ultimo);
-    if(ul) a(masDias(ul, +x.cada || 14), 18, 'Hace rato que no', x.nombre);
-  });
+  if(u) a(masDias(u, +state.chequeo.cada || 30), 10, 'Check-in con María', 'Ya toca sentarse a platicar cómo van.');
   out.sort(function(x, y){ return x.at - y.at; });
   return out.slice(0, 50);
 }
@@ -1825,14 +1821,15 @@ function render(){
   var app = $('#app');
   if(!ui.listo){ app.innerHTML = '<div class="cargando"><p>Abriendo mi cuaderno…</p></div>'; return; }
   if(!state.bienvenida){ if(!state.manual.length) state.manual = situacionesBase(); state.bienvenida = true; ui.anim = true; guardar(); }
-  var v = ui.tab === 'maria' ? vistaMaria() : ui.tab === 'crecer' ? vistaCrecer() : ui.tab === 'guias' ? vistaGuias() : ui.tab === 'fechas' ? vistaFechas() : vistaHoy();
+  if(['maria','guias','fechas'].indexOf(ui.tab) < 0) ui.tab = 'maria';
+  var v = ui.tab === 'guias' ? vistaGuias() : ui.tab === 'fechas' ? vistaFechas() : vistaMaria();
   app.innerHTML =
     '<header class="top"><div class="marca">Nov</div>' +
     '<button class="icono" data-a="ajustes" aria-label="Ajustes">' + I.eng + '</button></header>' +
     '<div class="cab">' + v.cab + '</div>' +
     '<main>' + v.cuerpo + '</main>' +
     '<nav class="tabs" aria-label="Secciones"><div class="tabs-in">' +
-      tabBtn('hoy', 'Hoy', I.sol) + tabBtn('crecer', 'Crecer', I.crecer) + tabBtn('maria', 'María', I.cora) + tabBtn('guias', 'Guías', I.guia) + tabBtn('fechas', 'Fechas', I.cal) +
+      tabBtn('maria', 'María', I.cora) + tabBtn('guias', 'Ayuda', I.guia) + tabBtn('fechas', 'Fechas', I.cal) +
     '</div></nav>';
   if(ui.anim){
     var mn = app.querySelector('main');
@@ -1954,7 +1951,8 @@ function filaFecha(f, conBorrar){
 }
 
 function vistaMaria(){
-  var subs = [['preguntas','Preguntas'],['fichas','Fichas'],['regalos','Regalos'],['valoro','Valoro']];
+  var subs = [['fichas','Lo que sé'],['querer','Cómo quererla'],['regalos','Regalos']];
+  if(subs.every(function(s){ return s[0] !== ui.sub; })) ui.sub = 'fichas';
   var apuntes = state.manual.reduce(function(s, m){ return s + BLOQUES.reduce(function(a, b){ return a + m[b.id].length; }, 0); }, 0);
   var elegidos = state.amor.map(amorDe).filter(Boolean);
   var cum = state.fechas.filter(function(f){ return f.nacio; })[0], dn = cum ? parse(cum.fecha) : null, tt = hoy(), info = [];
@@ -1982,8 +1980,43 @@ function vistaMaria(){
     subs.map(function(s){
       return '<button role="tab" data-a="sub" data-v="' + s[0] + '" aria-selected="' + (ui.sub === s[0]) + '">' + s[1] + '</button>';
     }).join('') + '</div>';
-  h += ui.sub === 'preguntas' || ui.sub === 'vida' ? vistaPreguntas() : ui.sub === 'regalos' ? vistaRegalos() : ui.sub === 'valoro' ? vistaValoro() : vistaFichas();
+  h += ui.sub === 'querer' ? vistaQuerer() : ui.sub === 'regalos' ? vistaRegalos() : vistaFichas();
   return {cab:cab, cuerpo:h};
+}
+
+function vistaQuerer(){
+  var h = '';
+  var orden = AMOR.slice().sort(function(a, b){ return amorPunt(null, b.id) - amorPunt(null, a.id); });
+  if(state.amor.length){
+    h += '<section class="tarjeta g-lila"><p class="rev-l">Se siente querida con</p>' +
+      orden.filter(function(a){ return state.amor.indexOf(a.id) >= 0; }).map(function(a){
+        return '<div class="gen-l"><span>' + a.n + ', ' + amorPunt(null, a.id) + ' de 5</span><p>' + esc(a.d) + '</p></div>';
+      }).join('') +
+      '<div class="hoja-b" style="margin-top:10px"><button class="b b-sec" data-a="amor">Cambiar</button></div></section>';
+  } else {
+    h += '<button class="b b-pri b-ancho" data-a="amor">Preguntarle cómo se siente querida</button>';
+  }
+  h += sec('Lo que me ha pedido', state.pedidos.length);
+  if(state.pedidos.length){
+    h += '<div class="lista">' + state.pedidos.map(function(p){
+      return '<div class="fila"><div class="fila-c"><p class="nota-x">' + esc(p.texto) + '</p></div>' +
+        '<button class="mini" data-a="del-pedido" data-id="' + p.id + '" aria-label="Quitar ' + esc(p.texto) + '">' + I.x + '</button></div>';
+    }).join('') + '</div>';
+  }
+  h += '<div class="agregar"' + (state.pedidos.length ? '' : ' style="margin-top:0"') + '><input class="campo" data-foco="pedido" data-enter="add-pedido" placeholder="Algo que María me ha pedido" aria-label="Algo que María me ha pedido" maxlength="120">' +
+    '<button class="b b-sec" data-a="add-pedido">Agregar</button></div>';
+  var resp = state.respuestas.slice().sort(function(a, b){ return (b.fecha || '') > (a.fecha || '') ? 1 : -1; });
+  h += sec('Sus respuestas', resp.length);
+  if(resp.length){
+    h += '<div class="lista">' + resp.map(function(x){
+      return '<div class="fila fila-f"><button class="fila-c preg-q" data-a="preg-abrir" data-v="' + esc(x.q) + '"><p class="meta preg-r-q">' + esc(x.q) + '</p>' +
+        '<p class="nota-x">' + esc(x.a) + '</p></button>' +
+        '<button class="mini" data-a="del-resp" data-id="' + x.id + '" aria-label="Borrar respuesta">' + I.x + '</button></div>';
+    }).join('') + '</div>';
+  } else {
+    h += '<button class="enlace" data-a="ir-ideas">Sacar una pregunta para hacerle</button>';
+  }
+  return h;
 }
 
 function preguntaSemana(){
@@ -2032,6 +2065,17 @@ function vistaPreguntas(){
         '<p class="nota-x">' + esc(x.a) + '</p>' + (d ? '<p class="meta">' + esc(fechaCorta(d)) + '</p>' : '') + '</button>' +
         '<button class="mini" data-a="del-resp" data-id="' + x.id + '" aria-label="Borrar respuesta">' + I.x + '</button></div>';
     }).join('') + '</div>';
+  }
+  return h;
+}
+function vistaGenPregunta(){
+  var h = genCaja({modo:ui.pqModo, modoA:'pq-modo', ir:'pq', hay:!!ui.pq, cara:blob('circulo', '#22A699'),
+    filtros:'<span class="rot">Tipo</span>' + chipsDe('pq-tipo', ui.pqTipo, PREG_CATS.filter(function(c){ return c[0] !== 'mias' || state.pregMias.length; }))});
+  if(ui.pq){
+    var r0 = respuestaDe(ui.pq);
+    h += '<section class="tarjeta gen-r g-menta" aria-live="polite"><p class="rev-l">' + catNom(catDe(ui.pq)) + '</p>' +
+      '<p class="gen-plan">' + esc(ui.pq) + '</p>' + (r0 ? '<div class="gen-l"><span>Ya respondió</span><p>' + esc(r0.a) + '</p></div>' : '') +
+      '<div class="hoja-b" style="margin-top:6px"><button class="b b-pri" data-a="preg-abrir" data-v="' + esc(ui.pq) + '">' + (r0 ? 'Cambiar respuesta' : 'Anotar su respuesta') + '</button></div></section>';
   }
   return h;
 }
@@ -2227,11 +2271,9 @@ function tarjetaChequeo(corta){
   var estado = e.nunca ? 'Todavía ninguno' : e.dias === 0 ? 'Hoy'
     : 'El último fue hace ' + plural(e.dias, 'día', 'días') + (e.toca ? '' : ' · el siguiente en ' + plural(e.faltan, 'día', 'días'));
   return '<section class="tarjeta cheq">' +
-    '<div class="cheq-top"><h2>Chequeo con María</h2>' + (e.toca ? '<span class="pill pill-rosa">Ya toca</span>' : '') + '</div>' +
+    '<div class="cheq-top"><h2>Check-in con María</h2>' + (e.toca ? '<span class="pill pill-rosa">Ya toca</span>' : '') + '</div>' +
     (corta ? '' : mi('una vez al mes, sentarnos a platicar cómo vamos, sin celular')) +
     '<p class="meta">' + estado + '</p>' +
-    (function(){ var np = state.temas.filter(function(x){ return !x.hablado; }).length;
-      return np ? '<button class="enlace cheq-temas" data-a="ir-hablar">' + plural(np, 'tema pendiente', 'temas pendientes') + ' para platicar</button>' : ''; })() +
     '<div class="cheq-b">' +
       (e.dias === 0 ? '<span class="pill pill-ok">' + I.ok + 'Hoy</span>'
                     : '<button class="b ' + (e.toca ? 'b-pri' : 'b-sec') + ' b-chico" data-a="chequeo-hoy">Ya lo tuvimos</button>') +
@@ -2416,8 +2458,7 @@ function vistaGenGesto(){
   if(ui.gg){
     var g = ui.gg;
     h += '<section class="tarjeta gen-r g-' + (EJE_COL[g.eje] || 'lila') + '" aria-live="polite">' +
-      '<p class="rev-l">' + EJE_N[g.eje] + ', ' + ritmoTxt(g.cada) + '</p><p class="gen-plan">' + esc(g.t) + '</p>' +
-      '<div class="hoja-b" style="margin-top:6px"><button class="b b-pri" data-a="gg-hoy">Lo hice hoy</button></div></section>';
+      '<p class="rev-l">' + EJE_N[g.eje] + '</p><p class="gen-plan">' + esc(g.t) + '</p></section>';
   }
   return h;
 }
@@ -2489,7 +2530,7 @@ function citasFiltradas(){
   return todas.filter(function(c){ return c[1] === ui.citaF || c[2] === ui.citaF; });
 }
 function vistaGuias(){
-  var cab = '<h1 class="titulo">Guías</h1>';
+  var cab = '<h1 class="titulo">Ayuda</h1>';
   function guia(a, titulo, texto, icono){
     return '<button class="tarjeta guia g-' + ({pausa:'lila', disculpa:'rosa', dificil:'cielo'}[a] || 'coral') + '" data-a="' + a + '"><span class="ico" aria-hidden="true">' + icono + '</span>' +
       '<span><b>' + titulo + '</b></span>' + I.flecha + '</button>';
@@ -2498,22 +2539,31 @@ function vistaGuias(){
     guia('disculpa', 'Disculparme bien', '', blob('gota', '#FF8A3D', 'feliz')) +
     guia('dificil', 'Decir algo difícil', '', blob('nube', '#5B7FE0'));
   h += vistaManual();
-  h += sec('Generador de citas') + vistaGenerador();
-  h += sec('Mis ideas de cita', state.citas.length);
-  if(state.citas.length) h += '<div class="lista">' + state.citas.map(function(c){
-    return '<div class="fila"><div class="fila-c"><p class="nota-x">' + esc(c.texto) + '</p></div>' +
-      '<button class="mini" data-a="del-cita" data-id="' + c.id + '" aria-label="Borrar idea">' + I.x + '</button></div>';
+  var ideas = [['cita','Una cita'],['gesto','Un gesto'],['pregunta','Una pregunta']];
+  if(!ui.idea) ui.idea = 'cita';
+  h += '<div id="ideas">' + sec('Dame una idea') + '</div><div class="seg" role="tablist">' + ideas.map(function(s){
+    return '<button role="tab" data-a="idea" data-v="' + s[0] + '" aria-selected="' + (ui.idea === s[0]) + '">' + s[1] + '</button>';
   }).join('') + '</div>';
-  h += '<div class="agregar"' + (state.citas.length ? ' style="margin-top:12px"' : ' style="margin-top:0"') + '><input class="campo" data-foco="cita" data-enter="add-cita" placeholder="Una idea mía" aria-label="Nueva idea de cita" maxlength="140">' +
-    '<button class="b b-sec" data-a="add-cita">Agregar</button></div>';
+  if(ui.idea === 'gesto') h += vistaGenGesto();
+  else if(ui.idea === 'pregunta') h += vistaGenPregunta();
+  else {
+    h += vistaGenerador();
+    h += sec('Mis ideas de cita', state.citas.length);
+    if(state.citas.length) h += '<div class="lista">' + state.citas.map(function(c){
+      return '<div class="fila"><div class="fila-c"><p class="nota-x">' + esc(c.texto) + '</p></div>' +
+        '<button class="mini" data-a="del-cita" data-id="' + c.id + '" aria-label="Borrar idea">' + I.x + '</button></div>';
+    }).join('') + '</div>';
+    h += '<div class="agregar"' + (state.citas.length ? ' style="margin-top:12px"' : ' style="margin-top:0"') + '><input class="campo" data-foco="cita" data-enter="add-cita" placeholder="Una idea mía" aria-label="Nueva idea de cita" maxlength="140">' +
+      '<button class="b b-sec" data-a="add-cita">Agregar</button></div>';
+  }
   return {cab:cab, cuerpo:h};
 }
 
 function vistaFechas(){
   var todas = fechasTodas();
   var cab = '<h1 class="titulo">Fechas</h1>';
-  var h = mi('su cumple, el aniversario y lo importante. me avisa antes') +
-    '<button class="captura" style="margin-top:0" data-a="fecha">' + I.mas + '<span>Agregar fecha</span></button>';
+  var h = tarjetaChequeo(true) +
+    '<button class="captura" data-a="fecha">' + I.mas + '<span>Agregar fecha</span></button>';
   if(!todas.length){
     return {cab:cab, cuerpo:h + '<div class="vacio">' + blob() + '<p>Nada todavía</p></div>'};
   }
@@ -2810,6 +2860,8 @@ function accion(a, el){
   switch(a){
     case 'tab': ui.tab = v; ui.anim = true; window.scrollTo(0, 0); render(); break;
     case 'sub': ui.sub = v; ui.anim = true; render(); break;
+    case 'idea': ui.idea = v; render(); break;
+    case 'ir-ideas': ui.tab = 'guias'; ui.idea = 'pregunta'; render(); var ie = $('#ideas'); if(ie && ie.scrollIntoView) ie.scrollIntoView({block:'start'}); break;
     case 'filtro': ui.filtro = v; render(); break;
     case 'preg-cat': ui.pregCat = v; render(); break;
     case 'pq-modo': ui.pqModo = v; ui.pq = null; render(); break;
@@ -2893,7 +2945,7 @@ function accion(a, el){
       var ro = retoSemana(); state.retos[ro.key] = {i:(ro.i + 1) % RETOS.length, n:0, ok:false}; guardar(); render();
       var rt0 = $('.reto'); if(rt0 && !sinMov()){ rt0.style.animation = 'none'; void rt0.offsetWidth; rt0.style.animation = 'entra .45s cubic-bezier(.2,.8,.2,1)'; }
       break;
-    case 'radar-ir': ui.tab = 'crecer'; ui.crecer = 'habitos'; ui.gTipo = v || 'todas'; ui.anim = true; render();
+    case 'radar-ir': ui.tab = 'guias'; ui.idea = 'gesto'; ui.gTipo = v || 'todas'; ui.anim = true; render();
       var mg = $('.chips'); if(mg && mg.scrollIntoView) mg.scrollIntoView({block:'center', behavior: sinMov() ? 'auto' : 'smooth'});
       break;
     case 'tema': hojaTema(); break;
@@ -2917,7 +2969,7 @@ function accion(a, el){
       var fb = buscar(state.fotos, id); state.fotos = quitar(state.fotos, id); if(fb) soltarAsset(fb.a);
       if(ui.recOff) ui.recOff = 0;
       guardar(); cerrarHoja(); render(); toast('Foto borrada'); break;
-    case 'ir-gestos': ui.tab = 'crecer'; ui.crecer = 'habitos'; window.scrollTo(0, 0); render(); break;
+    case 'ir-gestos': ui.tab = 'guias'; ui.idea = 'gesto'; window.scrollTo(0, 0); render(); break;
     case 'cat-g': ui.catG = v; render(); break;
     case 'g-tipo': ui.gTipo = v; render(); break;
     case 'gesto-deshacer': deshacerGesto(v); guardar(); render(); toast('Deshecho'); break;
@@ -2948,7 +3000,7 @@ function accion(a, el){
     case 'gen-agendar':
       if(ui.gen) hojaFecha({titulo:'Cita: ' + ui.gen.plan, anual:false, aviso:1});
       break;
-    case 'ir-hablar': ui.tab = 'crecer'; ui.crecer = 'hablar'; window.scrollTo(0, 0); render(); break;
+    case 'ir-hablar': ui.tab = 'maria'; ui.sub = 'querer'; window.scrollTo(0, 0); render(); break;
     case 'guardar-tema':
       var tmT = val('#tm-t');
       if(!tmT){ falta('#tm-e', 'Escribe el tema.', '#tm-t'); break; }
@@ -2973,7 +3025,7 @@ function accion(a, el){
       state.vidaExtra.unshift({id:uid(), t:vdT, fecha:k}); ui.foco = 'vida'; guardar(); render(); break;
     case 'del-vida-extra': state.vidaExtra = quitar(state.vidaExtra, id); guardar(); render(); break;
     case 'chequeo-hoy': state.chequeo.ultimo = k; state.chequeoEj = false; anotar('tiempo', 'c'); guardar(); render(); burst(false); toast('Anotado'); break;
-    case 'ir-valoro': ui.tab = 'maria'; ui.sub = 'valoro'; window.scrollTo(0, 0); render(); break;
+    case 'ir-valoro': ui.tab = 'maria'; ui.sub = 'querer'; window.scrollTo(0, 0); render(); break;
     case 'ir-citas': ui.tab = 'guias'; window.scrollTo(0, 0); render(); break;
     case 'pausa': hojaPausa(); break;
     case 'disculpa': hojaDisculpa(); break;
@@ -3203,7 +3255,7 @@ function accion(a, el){
       guardar(); cerrarHoja(); render(); toast(iv ? 'Fecha guardada' : 'Fecha quitada'); break;
     case 'borrar':
       if(!ui.borrar){ ui.borrar = true; hojaAjustes(); ui.borrar = true; break; }
-      state = normalize(null); ui.tab = 'hoy'; ui.sub = 'preguntas'; ui.crecer = 'semana'; ui.citaSel = ''; ui.filtro = 'todas'; ui.abierta = null; ui.offset = 0;
+      state = normalize(null); ui.tab = 'maria'; ui.sub = 'fichas'; ui.crecer = 'semana'; ui.citaSel = ''; ui.filtro = 'todas'; ui.abierta = null; ui.offset = 0;
       guardar(); cerrarHoja(); render(); toast('Todo borrado'); break;
   }
 }
