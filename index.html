@@ -968,6 +968,8 @@ main:has(.fab){padding-bottom:84px}
 .ck-dia i{font-style:normal;font-size:.68rem;font-weight:700;text-transform:uppercase;color:var(--muted);margin-top:3px}
 .ck-res{font-weight:500;font-size:.95rem;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .ck-del{display:block;margin:28px auto 0;color:var(--muted);font-size:.85rem}
+.ck-ul{margin:0;padding-left:18px;list-style:disc;display:grid;gap:6px}
+.ck-ul li{line-height:1.4}
 </style>
 </head>
 <body>
@@ -2338,20 +2340,21 @@ function vistaCheckins(){
     var ud = parse(ult.fecha);
     h += '<h2 class="ahora-s">Lo último que platicaron' + (ud ? ' · ' + ud.getDate() + ' ' + MESES[ud.getMonth()] : '') + '</h2><div class="ck-card">' +
       (ult.trae ? '<div class="ck-row"><span class="ck-k">Trae</span><p>' + esc(ult.trae) + '</p></div>' : '') +
+      ((ult.platicamos || []).length ? '<div class="ck-row"><span class="ck-k">Platicamos</span><ul class="ck-ul">' + ult.platicamos.map(function(t){ return '<li>' + esc(t) + '</li>'; }).join('') + '</ul></div>' : '') +
       (mas.length || ult.querida ? '<div class="ck-row"><span class="ck-k">Quiere más</span>' +
         (mas.length ? '<div class="ck-chips">' + mas.map(function(m){ return '<span>' + esc(m) + '</span>'; }).join('') + '</div>' : '') +
         (ult.querida ? '<p>' + esc(ult.querida) + '</p>' : '') + '</div>' : '') +
       (ult.notas ? '<div class="ck-row"><span class="ck-k">Notas</span><p>' + esc(ult.notas) + '</p></div>' : '') + '</div>';
   }
 
-  h += '<div class="ahora-s ck-s"><h2>Cómo se siente querida</h2><button class="enlace" data-a="amor">' + (Object.keys(state.amorP || {}).length ? 'Cambiar' : 'Preguntarle') + '</button></div>';
+  h += '<h2 class="ahora-s">Cómo se siente querida</h2>';
   if(Object.keys(state.amorP || {}).length){
     var orden = AMOR.slice().sort(function(a, b){ return amorPunt(null, b.id) - amorPunt(null, a.id); });
     h += '<div class="ck-card">' + orden.map(function(a){
       var v = amorPunt(null, a.id);
       return '<div class="ck-amor"><span class="ck-an">' + a.n + '</span><span class="ck-ab"><i style="width:' + (v * 20) + '%"></i></span><span class="ck-av">' + (v || '–') + '</span></div>';
     }).join('') + '</div>';
-  } else h += '<button class="aviso-ck" data-a="amor"><span>Pregúntale qué la hace sentir querida</span><b>Empezar</b></button>';
+  } else h += '<button class="aviso-ck" data-a="checkin"><span>Se llena en el próximo check-in</span><b>Anotar</b></button>';
 
   h += '<h2 class="ahora-s">Avisos al azar</h2><div class="seg ck-seg" role="tablist">' +
     [['0','No'],['2','2'],['3','3'],['5','5'],['7','Diario']].map(function(o){
@@ -2361,7 +2364,7 @@ function vistaCheckins(){
   if(state.checkins.length > (ult ? 1 : 0)){
     h += '<h2 class="ahora-s">Historial</h2><div class="ahora-l2">' + state.checkins.slice(ult ? 1 : 0).map(function(c){
       var d = parse(c.fecha), mas2 = (c.mas || []).map(function(id){ return (amorDe(id) || {n:id}).n.toLowerCase(); });
-      var res = [c.trae, mas2.length ? 'quiere más ' + unir(mas2) : '', c.querida, c.notas].filter(Boolean).join(' · ');
+      var res = [c.trae].concat(c.platicamos || [], [mas2.length ? 'quiere más ' + unir(mas2) : '', c.querida, c.notas]).filter(Boolean).join(' · ');
       return '<div class="ahora-f"><span class="ck-dia"><b>' + (d ? d.getDate() : '') + '</b><i>' + (d ? MESES[d.getMonth()] : '') + '</i></span>' +
         '<span class="ahora-t"><span class="ahora-x ck-res">' + esc(res || 'Check-in') + '</span></span>' +
         '<button class="mini" data-a="del-checkin" data-id="' + c.id + '" aria-label="Borrar check-in">' + I.x + '</button></div>';
@@ -2376,12 +2379,18 @@ function hojaCheckin(){
     '<h2 id="ht">Check-in</h2>' +
     '<label for="ck-t">¿Trae algo?</label>' +
     '<textarea class="campo" id="ck-t" data-auto maxlength="600"></textarea>' +
-    '<span class="rot" id="ck-ml">¿Cómo quiere sentirse más querida?</span>' +
-    '<div class="chips env" role="group" aria-labelledby="ck-ml" id="ck-m">' + AMOR.map(function(a){
-      return '<button class="chip" data-a="ck-op" data-v="' + a.id + '" aria-pressed="false">' + a.n + '</button>';
-    }).join('') + '</div>' +
-    '<input class="campo" id="ck-q" maxlength="300" placeholder="En sus palabras" aria-label="Cómo quiere sentirse más querida, en sus palabras">' +
-    '<label for="ck-n">Algo más</label>' +
+    '<span class="rot">Lo que platicamos</span>' +
+    '<div id="ck-p"><input class="campo ck-pi" maxlength="300" aria-label="Algo que platicamos"></div>' +
+    '<button class="chip" data-a="ck-mas" style="margin-top:8px">+ Agregar otra cosa</button>' +
+    '<span class="rot" style="margin-top:18px">¿Cómo se siente querida?</span>' +
+    AMOR.map(function(a){
+      var v = amorPunt(null, a.id);
+      return '<div class="punt" role="group" aria-label="' + a.n + '"><b>' + a.n + '</b>' +
+        '<div class="punt-b">' + [1,2,3,4,5].map(function(n){
+          return '<button data-a="amor-op" data-v="' + a.id + '" data-n="' + n + '" aria-pressed="' + (v === n) + '" aria-label="' + n + ' de 5">' + n + '</button>';
+        }).join('') + '</div></div>';
+    }).join('') +
+    '<label for="ck-n">Notas</label>' +
     '<textarea class="campo" id="ck-n" maxlength="600"></textarea>' +
     '<p class="error" id="ck-e" role="alert"></p>' + botones('guardar-checkin', 'Guardar'), 'checkin');
 }
@@ -3310,11 +3319,19 @@ function accion(a, el){
       break;
     case 'push-apagar': pushApagar(); hojaAjustes(); toast('Avisos apagados'); break;
     case 'ck-op': el.setAttribute('aria-pressed', el.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'); break;
+    case 'ck-mas':
+      var cp = $('#ck-p'), ni = document.createElement('input');
+      ni.className = 'campo ck-pi'; ni.maxLength = 300; ni.setAttribute('aria-label', 'Algo que platicamos'); ni.style.marginTop = '8px';
+      cp.appendChild(ni); ni.focus(); break;
     case 'guardar-checkin':
-      var ckT = val('#ck-t'), ckQ = val('#ck-q'), ckN = val('#ck-n');
-      var ckM = [].map.call(document.querySelectorAll('#ck-m .chip[aria-pressed="true"]'), function(b){ return b.getAttribute('data-v'); });
-      if(!ckT && !ckQ && !ckN && !ckM.length){ falta('#ck-e', 'Anota algo antes de guardar.', '#ck-t'); break; }
-      state.checkins.unshift({id:uid(), fecha:k, trae:ckT, mas:ckM, querida:ckQ, notas:ckN});
+      var ckT = val('#ck-t'), ckN = val('#ck-n');
+      var ckP = [].map.call(document.querySelectorAll('#ck-p .ck-pi'), function(i){ return i.value.trim(); }).filter(Boolean);
+      var ckA = {};
+      [].forEach.call(document.querySelectorAll('#hoja .punt-b button[aria-pressed="true"]'), function(b){ ckA[b.getAttribute('data-v')] = +b.getAttribute('data-n'); });
+      if(!ckT && !ckN && !ckP.length && !Object.keys(ckA).length){ falta('#ck-e', 'Anota algo antes de guardar.', '#ck-t'); break; }
+      var ckPrev = copia(state.amorP || {});
+      state.checkins.unshift({id:uid(), fecha:k, trae:ckT, platicamos:ckP, amor:ckA, notas:ckN});
+      if(Object.keys(ckA).length){ Object.keys(ckA).forEach(function(x){ ckPrev[x] = ckA[x]; }); state.amorP = ckPrev; state.amor = amorTop(ckPrev); }
       state.chequeo.ultimo = k;
       guardar(); cerrarHoja(); render(); toast('Guardado'); break;
     case 'del-checkin': state.checkins = quitar(state.checkins, id); guardar(); render(); toast('Borrado'); break;
@@ -3583,7 +3600,7 @@ function accion(a, el){
       break;
     case 'amor-op':
       [].forEach.call(el.parentNode.children, function(c){ c.setAttribute('aria-pressed', c === el ? 'true' : 'false'); });
-      $('#m-e').textContent = ''; break;
+      if($('#m-e')) $('#m-e').textContent = ''; break;
     case 'guardar-amor':
       var np = {};
       [].forEach.call(document.querySelectorAll('#hoja .punt-b button[aria-pressed="true"]'), function(e){ np[e.getAttribute('data-v')] = +e.getAttribute('data-n'); });
