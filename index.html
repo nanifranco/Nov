@@ -970,6 +970,9 @@ main:has(.fab){padding-bottom:84px}
 .ck-del{display:block;margin:28px auto 0;color:var(--muted);font-size:.85rem}
 .ck-ul{margin:0;padding-left:18px;list-style:disc;display:grid;gap:6px}
 .ck-ul li{line-height:1.4}
+.ck-ult{position:relative}
+.ck-x{position:absolute;top:10px;right:10px}
+.ck-ult .ck-row:first-of-type{padding-right:36px}
 </style>
 </head>
 <body>
@@ -2338,7 +2341,8 @@ function vistaCheckins(){
   if(ult){
     var mas = (ult.mas || []).map(function(id){ return (amorDe(id) || {n:id}).n; });
     var ud = parse(ult.fecha);
-    h += '<h2 class="ahora-s">Lo último que platicaron' + (ud ? ' · ' + ud.getDate() + ' ' + MESES[ud.getMonth()] : '') + '</h2><div class="ck-card">' +
+    h += '<h2 class="ahora-s">Lo último que platicaron' + (ud ? ' · ' + ud.getDate() + ' ' + MESES[ud.getMonth()] : '') + '</h2><div class="ck-card ck-ult">' +
+      '<button class="mini ck-x" data-a="del-checkin" data-id="' + ult.id + '" aria-label="Borrar este check-in">' + I.x + '</button>' +
       (ult.trae ? '<div class="ck-row"><span class="ck-k">Trae</span><p>' + esc(ult.trae) + '</p></div>' : '') +
       ((ult.platicamos || []).length ? '<div class="ck-row"><span class="ck-k">Platicamos</span><ul class="ck-ul">' + ult.platicamos.map(function(t){ return '<li>' + esc(t) + '</li>'; }).join('') + '</ul></div>' : '') +
       (mas.length || ult.querida ? '<div class="ck-row"><span class="ck-k">Quiere más</span>' +
@@ -2370,7 +2374,6 @@ function vistaCheckins(){
         '<button class="mini" data-a="del-checkin" data-id="' + c.id + '" aria-label="Borrar check-in">' + I.x + '</button></div>';
     }).join('') + '</div>';
   }
-  if(ult) h += '<button class="enlace ck-del" data-a="del-checkin" data-id="' + ult.id + '">Borrar el último check-in</button>';
   return {cab:cab, cuerpo:h};
 }
 
@@ -3334,7 +3337,15 @@ function accion(a, el){
       if(Object.keys(ckA).length){ Object.keys(ckA).forEach(function(x){ ckPrev[x] = ckA[x]; }); state.amorP = ckPrev; state.amor = amorTop(ckPrev); }
       state.chequeo.ultimo = k;
       guardar(); cerrarHoja(); render(); toast('Guardado'); break;
-    case 'del-checkin': state.checkins = quitar(state.checkins, id); guardar(); render(); toast('Borrado'); break;
+    case 'del-checkin':
+      var cq = buscar(state.checkins, id); if(!cq) break;
+      var cqd = parse(cq.fecha);
+      abrirHoja('<h2 id="ht">¿Borrar este check-in?</h2>' +
+        '<p class="nota-x" style="margin:4px 0 6px">' + (cqd ? esc(fechaCorta(cqd)) : 'Check-in') + (cq.trae ? ' · ' + esc(cq.trae) : '') + '</p>' +
+        '<div class="hoja-b"><button class="b b-sec" data-a="cerrar">Cancelar</button><button class="b b-peligro" data-a="del-checkin-si" data-id="' + cq.id + '">Borrar</button></div>', 'borrar-checkin');
+      break;
+    case 'del-checkin-si':
+      state.checkins = quitar(state.checkins, id); cerrarHoja(); guardar(); render(); toast('Borrado'); break;
     case 'azar': state.azar = +v; guardar(); render(); toast(+v ? 'Listo' : 'Sin avisos al azar'); break;
     case 'ir-ideas': ui.tab = 'guias'; ui.idea = 'pregunta'; render(); var ie = $('#ideas'); if(ie && ie.scrollIntoView) ie.scrollIntoView({block:'start'}); break;
     case 'filtro': ui.filtro = v; render(); break;
