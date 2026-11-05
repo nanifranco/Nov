@@ -938,6 +938,36 @@ main:has(.fab){padding-bottom:84px}
 .juntas-t{display:block;font-size:1.05rem;font-weight:700}
 .regalo-x{flex:none;align-self:flex-start}
 .regalo-a:empty{display:none}
+.ck-hero{margin-top:18px;padding:22px 20px;border-radius:24px;background:#221D3A;display:flex;flex-direction:column;gap:16px}
+.ck-top{display:flex;flex-direction:column;gap:4px}
+.ck-big{font-size:1.7rem;font-weight:800;letter-spacing:-.02em;line-height:1.15}
+.ck-barra{height:8px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
+.ck-barra i{display:block;height:100%;border-radius:99px;background:#6B5CE7}
+.ck-hero.toca .ck-barra i{background:#A08BFF}
+.ck-card{padding:6px 18px;border-radius:18px;background:var(--surface);border:1px solid var(--line)}
+.ck-row{padding:14px 0;border-top:1px solid var(--line)}
+.ck-row:first-child{border-top:0}
+.ck-k{display:block;font-size:.75rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.ck-row p{line-height:1.4}
+.ck-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.ck-chips span{padding:5px 11px;border-radius:99px;background:#241E3D;color:#A08BFF;font-size:.85rem;font-weight:600}
+.ck-s{display:flex;align-items:center;justify-content:space-between}
+.ck-s h2{font:inherit;margin:0}
+.ck-s .enlace{text-transform:none;letter-spacing:0;font-size:.9rem}
+.ck-amor{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.ck-amor:first-child{border-top:0}
+.ck-an{flex:0 0 120px;font-weight:600;font-size:.95rem}
+.ck-ab{flex:1;height:8px;border-radius:99px;background:var(--fill);overflow:hidden}
+.ck-ab i{display:block;height:100%;border-radius:99px;background:#6B5CE7}
+.ck-av{flex:0 0 18px;text-align:right;font-weight:700;color:var(--muted)}
+.ck-seg button{flex:1}
+.ck-seg button[aria-selected="true"]{background:#6B5CE7;color:#fff}
+.ck-an{flex-basis:140px}
+.ck-dia{flex:none;width:48px;height:52px;border-radius:14px;background:var(--fill);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+.ck-dia b{font-size:1.2rem;font-weight:800}
+.ck-dia i{font-style:normal;font-size:.68rem;font-weight:700;text-transform:uppercase;color:var(--muted);margin-top:3px}
+.ck-res{font-weight:500;font-size:.95rem;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.ck-del{display:block;margin:28px auto 0;color:var(--muted);font-size:.85rem}
 </style>
 </head>
 <body>
@@ -2293,26 +2323,54 @@ function vistaAhora(){
 }
 
 function vistaCheckins(){
-  var cab = '<h1 class="titulo">Check-ins</h1>', e = chequeoEstado();
-  var h = '<section class="tarjeta cheq"><div class="cheq-top"><h2>Check-in con María</h2>' + (e.toca ? '<span class="pill pill-rosa">Ya toca</span>' : '') + '</div>' +
-    '<p class="meta">' + (e.nunca ? 'Todavía ninguno' : e.dias === 0 ? 'Hoy' : 'El último fue hace ' + plural(e.dias, 'día', 'días') + (e.toca ? '' : ' · el siguiente en ' + plural(e.faltan, 'día', 'días'))) + '</p>' +
-    '<div class="cheq-b"><button class="b ' + (e.toca ? 'b-pri' : 'b-sec') + ' b-chico" data-a="checkin">Anotar check-in</button></div></section>';
-  h += sec('Se siente querida con', 0, '<button class="enlace" data-a="amor">' + (state.amor.length ? 'Cambiar' : 'Preguntarle') + '</button>');
-  if(state.amor.length) h += '<div class="chips">' + state.amor.map(function(id){ var a = amorDe(id); return a ? '<span class="chip" aria-pressed="true">' + a.n + '</span>' : ''; }).join('') + '</div>';
-  h += sec('Avisos al azar') + '<p class="meta" style="margin:-4px 0 8px">Tipo «+ contacto físico», a cualquier hora del día</p>' +
-    chipsDe('azar', String(state.azar), [['0','No'],['2','2 a la semana'],['3','3 a la semana'],['5','5 a la semana'],['7','Diario']]).replace(' style="margin-top:4px"', '');
-  if(state.checkins.length){
-    h += sec('Historial', state.checkins.length) + '<div class="lista">' + state.checkins.map(function(c){
-      var d = parse(c.fecha), mas = (c.mas || []).map(function(id){ return (amorDe(id) || {n:id}).n.toLowerCase(); });
-      return '<div class="fila fila-f apr"><div class="fila-c"><p class="fecha-t">' + (d ? esc(fechaCorta(d)) : 'Check-in') + '</p>' +
-        (c.trae ? '<p class="meta"><b>Trae:</b> ' + esc(c.trae) + '</p>' : '') +
-        (mas.length || c.querida ? '<p class="meta"><b>Quiere más:</b> ' + esc(unir(mas)) + (mas.length && c.querida ? '. ' : '') + esc(c.querida || '') + '</p>' : '') +
-        (c.notas ? '<p class="meta"><b>Notas:</b> ' + esc(c.notas) + '</p>' : '') + '</div>' +
+  var cab = '<h1 class="titulo">Check-ins</h1>', e = chequeoEstado(), cada = +state.chequeo.cada || 30;
+  var frac = e.nunca ? 1 : Math.min(1, e.dias / cada);
+  var h = '<section class="ck-hero' + (e.toca ? ' toca' : '') + '">' +
+    '<div class="ck-top"><span class="ahora-l">' + (e.toca ? 'Ya toca' : 'Próximo check-in') + '</span>' +
+    '<span class="ck-big">' + (e.nunca ? 'Todavía ninguno' : e.toca ? (e.dias === 0 ? 'Hoy' : 'Hace ' + plural(e.dias, 'día', 'días')) : 'En ' + plural(e.faltan, 'día', 'días')) + '</span>' +
+    (e.nunca ? '' : '<span class="ahora-m">El último fue ' + (e.dias === 0 ? 'hoy' : 'hace ' + plural(e.dias, 'día', 'días')) + '</span>') + '</div>' +
+    '<div class="ck-barra"><i style="width:' + Math.round(frac * 100) + '%"></i></div>' +
+    '<button class="b b-pri b-ancho" data-a="checkin">Anotar check-in</button></section>';
+
+  var ult = state.checkins[0];
+  if(ult){
+    var mas = (ult.mas || []).map(function(id){ return (amorDe(id) || {n:id}).n; });
+    var ud = parse(ult.fecha);
+    h += '<h2 class="ahora-s">Lo último que platicaron' + (ud ? ' · ' + ud.getDate() + ' ' + MESES[ud.getMonth()] : '') + '</h2><div class="ck-card">' +
+      (ult.trae ? '<div class="ck-row"><span class="ck-k">Trae</span><p>' + esc(ult.trae) + '</p></div>' : '') +
+      (mas.length || ult.querida ? '<div class="ck-row"><span class="ck-k">Quiere más</span>' +
+        (mas.length ? '<div class="ck-chips">' + mas.map(function(m){ return '<span>' + esc(m) + '</span>'; }).join('') + '</div>' : '') +
+        (ult.querida ? '<p>' + esc(ult.querida) + '</p>' : '') + '</div>' : '') +
+      (ult.notas ? '<div class="ck-row"><span class="ck-k">Notas</span><p>' + esc(ult.notas) + '</p></div>' : '') + '</div>';
+  }
+
+  h += '<div class="ahora-s ck-s"><h2>Cómo se siente querida</h2><button class="enlace" data-a="amor">' + (Object.keys(state.amorP || {}).length ? 'Cambiar' : 'Preguntarle') + '</button></div>';
+  if(Object.keys(state.amorP || {}).length){
+    var orden = AMOR.slice().sort(function(a, b){ return amorPunt(null, b.id) - amorPunt(null, a.id); });
+    h += '<div class="ck-card">' + orden.map(function(a){
+      var v = amorPunt(null, a.id);
+      return '<div class="ck-amor"><span class="ck-an">' + a.n + '</span><span class="ck-ab"><i style="width:' + (v * 20) + '%"></i></span><span class="ck-av">' + (v || '–') + '</span></div>';
+    }).join('') + '</div>';
+  } else h += '<button class="aviso-ck" data-a="amor"><span>Pregúntale qué la hace sentir querida</span><b>Empezar</b></button>';
+
+  h += '<h2 class="ahora-s">Avisos al azar</h2><div class="seg ck-seg" role="tablist">' +
+    [['0','No'],['2','2'],['3','3'],['5','5'],['7','Diario']].map(function(o){
+      return '<button role="tab" data-a="azar" data-v="' + o[0] + '" aria-selected="' + (String(state.azar) === o[0]) + '">' + o[1] + '</button>';
+    }).join('') + '</div><p class="ahora-m" style="margin:8px 4px 0">' + (+state.azar ? (+state.azar === 7 ? 'Uno cada día' : state.azar + ' a la semana') + ', a cualquier hora, tipo «+ contacto físico»' : 'Apagados') + '</p>';
+
+  if(state.checkins.length > (ult ? 1 : 0)){
+    h += '<h2 class="ahora-s">Historial</h2><div class="ahora-l2">' + state.checkins.slice(ult ? 1 : 0).map(function(c){
+      var d = parse(c.fecha), mas2 = (c.mas || []).map(function(id){ return (amorDe(id) || {n:id}).n.toLowerCase(); });
+      var res = [c.trae, mas2.length ? 'quiere más ' + unir(mas2) : '', c.querida, c.notas].filter(Boolean).join(' · ');
+      return '<div class="ahora-f"><span class="ck-dia"><b>' + (d ? d.getDate() : '') + '</b><i>' + (d ? MESES[d.getMonth()] : '') + '</i></span>' +
+        '<span class="ahora-t"><span class="ahora-x ck-res">' + esc(res || 'Check-in') + '</span></span>' +
         '<button class="mini" data-a="del-checkin" data-id="' + c.id + '" aria-label="Borrar check-in">' + I.x + '</button></div>';
     }).join('') + '</div>';
   }
+  if(ult) h += '<button class="enlace ck-del" data-a="del-checkin" data-id="' + ult.id + '">Borrar el último check-in</button>';
   return {cab:cab, cuerpo:h};
 }
+
 function hojaCheckin(){
   abrirHoja(
     '<h2 id="ht">Check-in</h2>' +
