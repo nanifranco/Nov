@@ -937,6 +937,7 @@ main:has(.fab){padding-bottom:84px}
 .juntas-l{display:block;font-size:.75rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
 .juntas-t{display:block;font-size:1.05rem;font-weight:700}
 .regalo-x{flex:none;align-self:flex-start}
+.regalo-a:empty{display:none}
 </style>
 </head>
 <body>
@@ -2201,11 +2202,10 @@ function vistaMaria(){
   var cab = '<div class="hero"><div class="avatar-b con-foto"><img alt="" src="maria.jpg?v=1"></div>' +
     '<div class="hero-t"><h1 class="titulo">María</h1>' + info.map(function(x){ return '<p class="meta">' + x + '</p>'; }).join('') + '</div></div>';
   var h = vistaFichas();
-  var rp = state.regalos.filter(function(r){ return !r.dado; }), rd = state.regalos.filter(function(r){ return r.dado; });
+  var rp = state.regalos;
   h += sec('Ideas de regalo', rp.length, '<button class="enlace" data-a="regalo">Agregar</button>');
   if(rp.length) h += '<div class="regalos">' + rp.map(tarjetaRegalo).join('') + '</div>';
   else h += '<button class="captura" style="margin-top:0" data-a="regalo">' + I.mas + '<span>Agregar idea de regalo</span></button>';
-  if(rd.length) h += sec('Ya se los di', rd.length) + '<div class="regalos">' + rd.map(tarjetaRegalo).join('') + '</div>';
   return {cab:cab, cuerpo:h};
 }
 
@@ -2213,13 +2213,13 @@ function linkOk(u){ u = String(u || '').trim(); if(!u) return ''; if(!/^https?:\
 function dominio(u){ var m = String(u).match(/^https?:\/\/(?:www\.)?([^\/?#]+)/i); return m ? m[1] : u; }
 function tarjetaRegalo(r){
   var f = r.foto ? fotoSrc(r.foto) : '', l = linkOk(r.link);
-  return '<div class="regalo-c' + (r.dado ? ' dado' : '') + '">' +
+  return '<div class="regalo-c">' +
     (f ? '<button class="regalo-f" data-a="editar-regalo" data-id="' + r.id + '" aria-label="Editar ' + esc(r.texto) + '"><img alt="" loading="lazy" src="' + esc(f) + '"></button>' : '') +
     '<div class="regalo-t"><button class="fila-c regalo-b" data-a="editar-regalo" data-id="' + r.id + '"><p class="fecha-t">' + esc(r.texto) + '</p>' +
       (r.precio ? '<p class="meta">' + esc(r.precio) + '</p>' : '') +
       (r.desc ? '<p class="meta regalo-d">' + esc(r.desc) + '</p>' : '') + '</button>' +
       '<div class="regalo-a">' + (l ? '<a class="b b-sec b-chico" href="' + esc(l) + '" target="_blank" rel="noopener">' + esc(dominio(l)) + '</a>' : '') +
-      '<button class="b b-sec b-chico" data-a="dado" data-id="' + r.id + '">' + (r.dado ? 'Pendiente otra vez' : 'Ya se lo di') + '</button></div></div>' +
+      '</div></div>' +
     '<button class="mini regalo-x" data-a="del-regalo-q" data-id="' + r.id + '" aria-label="Borrar ' + esc(r.texto) + '">' + I.x + '</button></div>';
 }
 function hojaRegalo(id){
