@@ -2430,9 +2430,9 @@ function vistaCheckins(){
   } else h += '<button class="aviso-ck" data-a="checkin"><span>Se llena en el próximo check-in</span><b>Anotar</b></button>';
 
   h += '<h2 class="ahora-s">Avisos al azar</h2><div class="seg ck-seg" role="tablist">' +
-    [['0','No'],['2','2'],['3','3'],['5','5'],['7','Diario']].map(function(o){
+    [['0','0'],['2','2'],['3','3'],['5','5'],['7','7']].map(function(o){
       return '<button role="tab" data-a="azar" data-v="' + o[0] + '" aria-selected="' + (String(state.azar) === o[0]) + '">' + o[1] + '</button>';
-    }).join('') + '</div><p class="ahora-m" style="margin:8px 4px 0">' + (+state.azar ? (+state.azar === 7 ? 'Uno cada día' : state.azar + ' a la semana') + ', a cualquier hora, tipo «+ contacto físico»' : 'Apagados') + '</p>';
+    }).join('') + '</div>';
 
   if(state.checkins.length > (ult ? 1 : 0)){
     h += '<h2 class="ahora-s">Historial</h2><div class="ahora-l2">' + state.checkins.slice(ult ? 1 : 0).map(function(c){
@@ -3343,7 +3343,6 @@ function hojaAjustes(){
       '<div class="hoja-b" style="margin-top:0"><button class="b b-sec" data-a="datos-copiar">Copiar mis datos</button>' +
       '<button class="b b-sec" data-a="datos-pegar">Pegar mis datos</button></div></div>' +
     '<div class="linea">' +
-      (state.gestosQuitados.length ? '<button class="b b-sec b-ancho" style="margin-bottom:10px" data-a="gestos-recuperar">Recuperar ' + plural(state.gestosQuitados.length, 'gesto quitado', 'gestos quitados') + '</button>' : '') +
       '<button class="b b-peligro b-ancho" data-a="borrar">' + (ui.borrar ? 'Toca otra vez para borrar todo' : 'Borrar todo') + '</button>' +
     '</div>' +
     '<div class="hoja-b"><button class="b b-sec" data-a="cerrar">Cerrar</button></div>', 'ajustes');
